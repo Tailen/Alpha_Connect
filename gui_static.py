@@ -4,7 +4,6 @@ from time import time
 from game import board
 
 
-
 class gameBoard:
 
     def __init__(self, wnd):

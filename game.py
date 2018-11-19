@@ -1,9 +1,11 @@
 from random import randint
 
+
 # For simpler reading x is red, o is green
-class board:
+class board(object):
 
     def __init__(self):
+        # (0,0) is top left corner
         self.slots = [['-' for i in range(6)] for i in range(7)]
         self.gameEnded = False
         self.winner = True # True for red(x) won, False for green(o) won
@@ -26,9 +28,8 @@ class board:
     def placeMove(self, x):
         msg = ''
         if not self.gameEnded:
-            x -= 1
-            if x < 0 or x >= 7:
-                msg = 'Invalid move, not between 1 and 7'
+            if x < 0 or x > 6:
+                msg = 'Invalid move, not between 0 and 6 inclusive'
                 print(msg)
                 return self.redTurn, -1, -1, msg
             y = 0
@@ -40,6 +41,7 @@ class board:
                 print(msg)
                 return self.redTurn, -1, -1, msg
             else:
+                print(self.getValidMoves())
                 self.__changeBoard(x, y)
                 self.redTurn = not self.redTurn # Change sides
         if self.checkPlayerWon('x'):
@@ -81,7 +83,7 @@ class board:
                 and self.slots[x+2][y-1]==color and self.slots[x+3][y]==color:
                     return True
 
-    # Reflect the board move by editing the slot list
+    # Render the board move by editing the slot list
     def __changeBoard(self, x, y):
         if self.redTurn:
             c = 'x'
@@ -95,6 +97,23 @@ class board:
                 if self.slots[x][y] != '-':
                     return False
         return True
+
+    # withY returns moveList with (x, y) cords, withY=False returns a list of x
+    def getValidMoves(self, withY=False):
+        # moveList is a list of tuple's of (x, y)
+        moveList = []
+        for x in range(7):
+            lowest_y = -1
+            for y in range(6):
+                if self.slots[x][y] == '-':
+                    lowest_y += 1
+            if lowest_y != -1:
+                moveList.append((x, y))
+        if withY:
+            return moveList
+        else:
+            return [cord[0] for cord in moveList]
+
 
 if __name__ == '__main__':
     gameBoard = board()
