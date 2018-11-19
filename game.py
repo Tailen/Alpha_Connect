@@ -4,17 +4,18 @@ from random import randint
 # For simpler reading x is red, o is green
 class board(object):
 
-    def __init__(self):
+    def __init__(self, cOut=True):
         # (0,0) is top left corner
         self.slots = [['-' for i in range(6)] for i in range(7)]
         self.gameEnded = False
-        self.winner = True # True for red(x) won, False for green(o) won
+        self.winner = True # True(1) for red(x) won, False(0) for green(o) won, -1 for draw
         # Decides who plays first
         self.redTurn = bool(randint(0, 1))
+        self.cOut = cOut
         if self.redTurn:
-            print('Red(x) plays first\n')
+            if self.cOut: print('Red(x) plays first\n')
         else:
-            print('Green(o) plays first\n')
+            if self.cOut: print('Green(o) plays first\n')
 
     def __str__(self):
         s = ''
@@ -27,36 +28,37 @@ class board(object):
 # Return current played color and position, (-1,-1) for invalid move, and a string msg
     def placeMove(self, x):
         msg = ''
+        y = 0
         if not self.gameEnded:
             if x < 0 or x > 6:
                 msg = 'Invalid move, not between 0 and 6 inclusive'
-                print(msg)
+                if self.cOut: print(msg)
                 return self.redTurn, -1, -1, msg
-            y = 0
             while y < 6 and (self.slots[x][y] == '-'):
                 y += 1
             y -= 1
             if y == -1:
                 msg = 'Invalid move, stack already full'
-                print(msg)
+                if self.cOut: print(msg)
                 return self.redTurn, -1, -1, msg
             else:
-                print(self.getValidMoves())
+
                 self.__changeBoard(x, y)
                 self.redTurn = not self.redTurn # Change sides
         if self.checkPlayerWon('x'):
             self.gameEnded = True
             msg = 'Red(x) Player Won!'
-            print(msg)
+            if self.cOut: print(msg)
         elif self.checkPlayerWon('o'):
             self.gameEnded = True
             self.winner = False
             msg = 'Green(o) Player Won!'
-            print(msg)
+            if self.cOut: print(msg)
         elif self.__checkDraw():
             self.gameEnded = True
+            self.winner = -1
             msg = 'Draw! Well played'
-            print(msg)
+            if self.cOut: print(msg)
         # If successfully played the move, then the current colors changes
         return (not self.redTurn), x, y, msg
             
@@ -94,7 +96,7 @@ class board(object):
     def __checkDraw(self):
         for x in range(7):
             for y in range(6):
-                if self.slots[x][y] != '-':
+                if self.slots[x][y] == '-':
                     return False
         return True
 

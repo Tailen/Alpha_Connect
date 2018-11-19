@@ -10,7 +10,7 @@ class gameBoard:
         # Create main window
         self.wnd = wnd
         self.wnd.title('Connect++')
-        self.game = board()
+        self.game = board(cOut=False)
         # Set Grid to resize with main window
         for i in range(7):
             self.wnd.columnconfigure(i, weight=1)
@@ -31,7 +31,7 @@ class gameBoard:
 
     def makeMove(self, x):
         if (not self.game.gameEnded) and (time()-self.last_time) > 0.5:
-            redTurn, _, y, msg = self.game.placeMove(x+1) # Input of placeMove is 1-7
+            redTurn, _, y, msg = self.game.placeMove(x) # Input of placeMove is 0-6
             if y != -1:
                 self.slotList[x][y].placePiece(redTurn)
             # If msg is not empty, update the msg
