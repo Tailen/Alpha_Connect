@@ -3,20 +3,29 @@ import numpy as np
 from copy import deepcopy
 from operator import itemgetter
 from random import randint
+# Use epsilon to prevent division by zero
+global epsilon
+epsilon = np.finfo(float).eps
+global depthList
+depthList = []
 
 
 # Class of Monte Carlo Tree Search
 class MCTSPlayer(object):
 
-    def __init__(self):
+    def __init__(self, board):
         # rootNode = treeNode(c=np.sqrt(2))
-        self.gameBoard = board(cOut=False)
+        self.gameBoard = board
         tree = searchTree(self.gameBoard)
-        for _ in range(1000):
+        for _ in range(3000):
             tree.iterate()
             # Reset currentNode to rootNode
             tree.currentNode = tree.rootNode
-        print(tree.getMove())
+        self.move = tree.getMove()
+        print(self.move)
+
+    def returnMove(self):
+        return self.move
 
 
 
@@ -29,10 +38,6 @@ class treeNode(object):
         self.n = 0 # Number of simulations after this move
         self.w = 0 # Number of wins after this move
         self.c = c # Exploration parameter, defaulted sqrt of 2
-        if parent != None:
-            self.N = parent.n # Number of simulations of parent node
-        else:
-            self.N = None
         self.board = deepcopy(board)
         self.player = player
         self.parent = parent
@@ -42,12 +47,13 @@ class treeNode(object):
             self.depth = 1
         else:
             self.depth = parent.depth + 1
-        print("Node depth is ", self.depth)
+        # print("Node depth is ", self.depth)
+        depthList.append(self.depth)
         
     def select(self):
         child = self
         while not child.isLeaf:
-            child = max(child.children.values(), key=lambda n: n.getUCT)
+            child = max(child.children.items(), key=lambda i: i[1].getUCT())[1]
         return child
 
     # Polulate children and return a random child of current node
@@ -58,6 +64,8 @@ class treeNode(object):
             self.children[move] = treeNode(deepcopy(self.board), not self.player, self.c, parent=self)
             # make the move in child nodes
             self.children[move].board.placeMove(move)
+        # Set isLeaf to False since children is not empty
+        self.isLeaf = False
         # Return a random child
         return self.children[moves[randint(0, len(moves)-1)]]
 
@@ -83,7 +91,12 @@ class treeNode(object):
             self.parent.backprop(winner)
 
     def getUCT(self):
-        return (1.0*self.w/self.n) + self.c*np.sqrt(np.log(self.N)/self.n)
+        # Get number of simulations of parent node
+        # if parent != None:
+        N = self.parent.n
+        # else:
+        #     self.N = None
+        return (1.0*self.w/(self.n+epsilon)) + self.c*np.sqrt(np.log(N)/(self.n+epsilon))
 
 
 # The same search tree is passed around each move, to save computation
@@ -107,9 +120,7 @@ class searchTree(object):
     
     def getMove(self):
         childNodes = self.rootNode.children
-        epsilon = np.finfo(float).eps # Use epsilon to prevent division by zero
-        return max(childNodes.items(), key=lambda i: 1.0*i[1].w/(i[1].n+epsilon))[0]
-
-
-if __name__ == '__main__':
-    player = MCTSPlayer()
+        print(len(depthList), 'instances of treeNode created')
+        print('Maximum depth is ', max(depthList))
+        return min(childNodes.items(), key=lambda i: 1.0*i[1].w/(i[1].n+epsilon))[0]
+        

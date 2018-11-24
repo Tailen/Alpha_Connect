@@ -1,8 +1,13 @@
-from tkinter import Tk, Frame, Label, Canvas, mainloop
-from random import randint
+import pygame
 from time import time
 from game import board
 
+
+
+class boardGUI:
+
+    def __init__(self):
+        return
 
 
 class gameBoard:
@@ -39,27 +44,6 @@ class gameBoard:
                 self.label.config(text=msg)
             self.last_time = time()
 
-# class stack:
-
-#     # Canvas in a frame
-#     def __init__(self, wnd, x, board):
-#         self.board = board
-#         self.frame = Frame(wnd, width=100, height=600, borderwidth=1, relief='solid')
-#         self.frame.grid(column=x, row=0, sticky='EWSN')
-#         self.canvas = Canvas(self.frame, width=100, height=600)
-#         self.canvas.bind('<Button-1>', lambda _: self.board.makeMove(x))
-#         self.canvas.pack(fill='both', expand=True)
-
-#     # Pass move to game engine and draw a circle
-#     def placePiece(self, redTurn):
-#         # print("clicked at", event.x, event.y)
-#         # self.game.placeMove(x)
-#         # if self.game.redTurn:
-#         if redTurn:
-#             self.canvas.create_oval(2,2,101,101, fill='red')
-#             # self.canvas.create_oval(0,0,int(self.canvas.cget('width'))/2,int(self.canvas.cget('height'))/2, fill='red')
-#         else:
-#             self.canvas.create_oval(2,2,101,101, fill='green')
 
 
 class icon:
@@ -73,6 +57,20 @@ class icon:
 
 
 if __name__ == '__main__':
-    wnd = Tk()
-    game = gameBoard(wnd)
-    mainloop()
+    # wnd = Tk()
+    # game = gameBoard(wnd)
+    # mainloop()
+    pygame.init()
+    gameDisplay = pygame.display.set_mode((800,600))
+    pygame.display.set_caption('Alpha Connect')
+    clock = pygame.time.Clock()
+    crashed = False
+    while not crashed:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                crashed == True
+            print(event)
+        pygame.display.update()
+        clock.tick(30)
+    pygame.quit()
+    quit()

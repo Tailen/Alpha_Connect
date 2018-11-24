@@ -25,24 +25,34 @@ class board(object):
             s += '\n'
         return s
 
+    # Return True if move is valid, and return False if invalid
+    def validMove(self, x):
+        msg = ''
+        y = 0
+        if x < 0 or x > 6:
+            msg = 'Invalid move, not between 0 and 6 inclusive'
+            if self.cOut: print(msg)
+            return (False, msg)
+        while y < 6 and (self.slots[x][y] == '-'):
+            y += 1
+        y -= 1
+        if y == -1:
+            msg = 'Invalid move, stack already full'
+            if self.cOut: print(msg)
+            return (False, y, msg)
+        return (True, y, msg)
+
 # Return current played color and position, (-1,-1) for invalid move, and a string msg
     def placeMove(self, x):
         msg = ''
         y = 0
         if not self.gameEnded:
-            if x < 0 or x > 6:
-                msg = 'Invalid move, not between 0 and 6 inclusive'
-                if self.cOut: print(msg)
-                return self.redTurn, -1, -1, msg
-            while y < 6 and (self.slots[x][y] == '-'):
-                y += 1
-            y -= 1
-            if y == -1:
-                msg = 'Invalid move, stack already full'
-                if self.cOut: print(msg)
+            checkResult = self.validMove(x)
+            if not checkResult[0]:
+                msg = checkResult[2]
                 return self.redTurn, -1, -1, msg
             else:
-
+                y = checkResult[1]
                 self.__changeBoard(x, y)
                 self.redTurn = not self.redTurn # Change sides
         if self.checkPlayerWon('x'):

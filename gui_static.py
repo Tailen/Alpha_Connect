@@ -2,6 +2,7 @@ from tkinter import Tk, Frame, Label, Canvas, mainloop
 from random import randint
 from time import time
 from game import board
+from mcts import MCTSPlayer
 
 
 class gameBoard:
@@ -28,9 +29,11 @@ class gameBoard:
         self.label.pack()
         # Initialize last_time
         self.last_time = time()
+        # get the first player
+        self.turn = False
 
     def makeMove(self, x):
-        if (not self.game.gameEnded) and (time()-self.last_time) > 0.5:
+        if (not self.game.gameEnded) and (time()-self.last_time) > 1.5:
             redTurn, _, y, msg = self.game.placeMove(x) # Input of placeMove is 0-6
             if y != -1:
                 self.slotList[x][y].placePiece(redTurn)
@@ -38,6 +41,11 @@ class gameBoard:
             if bool(msg):
                 self.label.config(text=msg)
             self.last_time = time()
+
+    def AIMove(self):
+        mctsPlayer = MCTSPlayer(self.game)
+        move = mctsPlayer.returnMove()
+        self.makeMove(move)
 
 
 class slot:
@@ -62,6 +70,11 @@ class slot:
             # self.canvas.create_oval(0,0,int(self.canvas.cget('width'))/2,int(self.canvas.cget('height'))/2, fill='red')
         else:
             self.canvas.create_oval(2,2,101,101, fill='green')
+
+        # Immediately followed by AI move
+        self.board.turn = not self.board.turn
+        if self.board.turn:
+            self.board.AIMove()
 
 
 if __name__ == '__main__':
