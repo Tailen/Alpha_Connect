@@ -11,5 +11,5 @@ class humanPlayer:
         while not board.validMove():
             move = int(input('Please enter a valid move (integer 0-6 inclusive): '))
         return move
-
+    
     
