@@ -1,7 +1,11 @@
 import pygame # For building the GUI
 import time # For timing between moves to prevent unintended placements
-from game import board # The basic machanics of the game
+from game import game # The basic machanics of the game
 import os # To traverse directories and load images
+
+from threading import Thread, Lock
+l = Lock()
+
 
 class gameBoard:
 
@@ -55,8 +59,8 @@ fullscreenBtnPos = (15, 15)
 playBtnPos = (810, 330)
 
 
-# Show start sceen on gameDisplay
-def showStartScreen():
+# Show start sceen
+def showStartScreen(isFullscreen=False):
     # Initialize button instances
     minimizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_minimize', command=setWindowed)
     maximizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_maximize', command=setFullScreen)
@@ -65,6 +69,10 @@ def showStartScreen():
     # Start screen main loop
     running = True
     isFullscreen = False
+
+    t = Thread(target=startGame)
+    t.start
+
     while running:
         # Check events
         for event in pygame.event.get():
@@ -94,8 +102,47 @@ def showStartScreen():
     # Quit program if main loop break
     quitGame()
 
-# Show game screen on gameDisplay
-def showGameScreen(isFullscreen):
+def startGame():
+    from players import humanPlayer
+    l.acquire()
+    player1 = humanPlayer()
+    player2 = humanPlayer()
+    myGame = game(players=(player1, player2))
+    myGame.startGame()
+    l.release
+
+# Show opponent selection screen
+def showSelectScreen(isFullscreen=False):
+    # Initialize button instances
+
+    # Select screen main loop
+    running = True
+    while running:
+        # Check events
+        for event in pygame.event.get():
+            # Exit event
+            if event.type == pygame.QUIT:
+                running = False
+            # Keydown events
+            elif event.type == pygame.KEYDOWN:
+                # Close the game when 'esc' is hit
+                if event.key == pygame.K_ESCAPE:
+                    running = False
+        # Update display
+        gameDisplay.blit(imageDic['bg_select'], (0, 0))
+        if isFullscreen:
+            # Scale gameDisplay to fit onto root
+            root.blit(pygame.transform.smoothscale(gameDisplay, (maxWidth, maxHeight)), (0, 0))
+        else:
+            root.blit(gameDisplay, (0, 0))
+        pygame.display.flip()
+        # Set framerate
+        clock.tick(fps)
+    # Quit program if main loop break
+    quitGame()
+
+# Show game screen
+def showGameScreen(isFullscreen=False):
     # Initialize button instances
 
     # Game screen main loop
@@ -103,6 +150,7 @@ def showGameScreen(isFullscreen):
     while running:
         # Check events
         for event in pygame.event.get():
+            # Exit event
             if event.type == pygame.QUIT:
                 running = False
             # Keydown events

@@ -1,4 +1,3 @@
-from game import *
 import numpy as np
 from copy import deepcopy
 from operator import itemgetter
@@ -18,7 +17,7 @@ class MCTSPlayer(object):
         # rootNode = treeNode(c=np.sqrt(2))
         self.gameBoard = board
         tree = searchTree(self.gameBoard)
-        for _ in range(3000):
+        for _ in range(5000):
             tree.iterate()
             # Reset currentNode to rootNode
             tree.currentNode = tree.rootNode

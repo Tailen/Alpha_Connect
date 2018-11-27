@@ -1,76 +1,72 @@
 from random import randint
+from players import humanPlayer
 
 
 # For simpler reading x is red, o is green
-class board(object):
+class game(object):
 
-    def __init__(self, cOut=True):
+    # Print msgs and errors if cout is True, players is a list of two player objects
+    def __init__(self, players, cout=True):
         # (0,0) is top left corner
         self.slots = [['-' for i in range(6)] for i in range(7)]
         self.gameEnded = False
-        self.winner = True # True(1) for red(x) won, False(0) for green(o) won, -1 for draw
-        # Decides who plays first
+        self.winner = None # False(0) for red(x) won, True(1) for green(o) won, -1 for draw
+        # Decide who plays first, 0 then first player(red) plays first
         self.redTurn = bool(randint(0, 1))
-        self.cOut = cOut
-        if self.redTurn:
-            if self.cOut: print('Red(x) plays first\n')
-        else:
-            if self.cOut: print('Green(o) plays first\n')
+        self.cout = cout
+        self.players = players
+        if self.redTurn and cout: print('Green(o) plays first\n')
+        elif cout: print('Red(x) plays first\n')
+        # True if the board is modified after GUI update
+        self.modified = False
 
-    def __str__(self):
-        s = ''
-        for y in range(6):
-            for x in range(7):
-                s = s + self.slots[x][y] + ' '
-            s += '\n'
-        return s
+    def startGame(self):
+        if self.cout: print(self)
+        while not self.gameEnded:
+            move = self.players[self.redTurn].getMove(self)
+            # Wait for GUI input
+            while move == None:
+                move = self.players[self.redTurn].getMove(self)
+            self.placeMove(move)
+            if self.cout: print('\n' + str(self))
 
-    # Return True if move is valid, and return False if invalid
-    def validMove(self, x):
-        msg = ''
-        y = 0
+    # Input a string value, return True if move is valid, and return False if invalid
+    def isValidMove(self, xStr):
+        try:
+            x = int(xStr)
+        except ValueError:
+            if self.cout: print('Input not ingeter, please enter a integer between 0 and 6 inclusive')
+            return False
         if x < 0 or x > 6:
-            msg = 'Invalid move, not between 0 and 6 inclusive'
-            if self.cOut: print(msg)
-            return (False, msg)
+            if self.cout: print('Invalid move, input must be between 0 and 6 inclusive')
+            return False
+        if self.slots[x][0] != '-':
+            if self.cout: print('Invalid move, stack already full')
+            return False
+        return True
+
+    # Return True if successfully played the move, input is assumed to be valid
+    def placeMove(self, x):
+        # Find y of the move at x
+        y = 0
         while y < 6 and (self.slots[x][y] == '-'):
             y += 1
         y -= 1
-        if y == -1:
-            msg = 'Invalid move, stack already full'
-            if self.cOut: print(msg)
-            return (False, y, msg)
-        return (True, y, msg)
-
-# Return current played color and position, (-1,-1) for invalid move, and a string msg
-    def placeMove(self, x):
-        msg = ''
-        y = 0
-        if not self.gameEnded:
-            checkResult = self.validMove(x)
-            if not checkResult[0]:
-                msg = checkResult[2]
-                return self.redTurn, -1, -1, msg
-            else:
-                y = checkResult[1]
-                self.__changeBoard(x, y)
-                self.redTurn = not self.redTurn # Change sides
+        # Modify the board
+        self.__changeBoard(x, y)
+        self.redTurn = not self.redTurn # Change sides
+        # Check the game status
         if self.checkPlayerWon('x'):
             self.gameEnded = True
-            msg = 'Red(x) Player Won!'
-            if self.cOut: print(msg)
+            self.winner = 0
+            if self.cout: print('Well Played! Red(x) player won!')
         elif self.checkPlayerWon('o'):
             self.gameEnded = True
-            self.winner = False
-            msg = 'Green(o) Player Won!'
-            if self.cOut: print(msg)
-        elif self.__checkDraw():
+            self.winner = 1
+            if self.cout: print('Well Played! Green(o) player won!')
+        elif self.checkDraw():
             self.gameEnded = True
-            self.winner = -1
-            msg = 'Draw! Well played'
-            if self.cOut: print(msg)
-        # If successfully played the move, then the current colors changes
-        return (not self.redTurn), x, y, msg
+            if self.cout: print('Well played! Draw!')
             
     def checkPlayerWon(self, color):
         # Check Horizontal
@@ -95,22 +91,23 @@ class board(object):
                 and self.slots[x+2][y-1]==color and self.slots[x+3][y]==color:
                     return True
 
-    # Render the board move by editing the slot list
+    # Place the move by editing slots list
     def __changeBoard(self, x, y):
         if self.redTurn:
             c = 'x'
         else:
             c = 'o'
         self.slots[x][y] = c
+        self.modified = True
 
-    def __checkDraw(self):
+    def checkDraw(self):
         for x in range(7):
-            for y in range(6):
-                if self.slots[x][y] == '-':
-                    return False
+            # False if any slot on the top row is empty
+            if self.slots[x][0] == '-':
+                return False
         return True
 
-    # withY returns moveList with (x, y) cords, withY=False returns a list of x
+    # withY=True returns moveList with (x, y) cords, withY=False returns a list of x
     def getValidMoves(self, withY=False):
         # moveList is a list of tuple's of (x, y)
         moveList = []
@@ -126,19 +123,18 @@ class board(object):
         else:
             return [cord[0] for cord in moveList]
 
+    # String representation of the board
+    def __str__(self):
+        s = ''
+        for y in range(6):
+            for x in range(7):
+                s = s + self.slots[x][y] + ' '
+            s = s[:-1] + '\n'
+        return s
+
 
 if __name__ == '__main__':
-    gameBoard = board()
-    print(gameBoard)
-    while not gameBoard.gameEnded:
-        if gameBoard.redTurn:
-            print('Red(x) player\'s turn!')
-        else:
-            print('Green(o) player\'s turn!')
-        try:
-            move = int(input('Please enter the column of your move: '))
-            gameBoard.placeMove(move)
-        except ValueError: 
-            print('Input not ingeter, please enter integer between 1 and 7')
-        print()
-        print(gameBoard)
+    player1 = humanPlayer()
+    player2 = humanPlayer()
+    myGame = game(players=(player1, player2))
+    myGame.startGame()
