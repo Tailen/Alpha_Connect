@@ -1,7 +1,7 @@
 from mcts import MCTSPlayer
 from game import board
 
-gameBoard = board(cOut=False)
+gameBoard = board(cout=False)
 while not gameBoard.gameEnded:
     print(gameBoard)
     move = int(input('Your move: '))

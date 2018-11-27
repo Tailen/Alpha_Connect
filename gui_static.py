@@ -1,17 +1,18 @@
 from tkinter import Tk, Frame, Label, Canvas, mainloop
 from random import randint
 from time import time
-from game import board
+from game import game
 from mcts import MCTSPlayer
+from players import humanGUIPlayer
 
 
 class gameBoard:
 
-    def __init__(self, wnd):
+    def __init__(self, wnd, players):
         # Create main window
         self.wnd = wnd
         self.wnd.title('Connect++')
-        self.game = board(cOut=False)
+        self.game = game(players, cout=False)
         # Set Grid to resize with main window
         for i in range(7):
             self.wnd.columnconfigure(i, weight=1)
@@ -34,12 +35,12 @@ class gameBoard:
 
     def makeMove(self, x):
         if (not self.game.gameEnded) and (time()-self.last_time) > 1.5:
-            redTurn, _, y, msg = self.game.placeMove(x) # Input of placeMove is 0-6
-            if y != -1:
+            valid, y, redTurn = self.game.placeMove(x) # Input of placeMove is 0-6
+            if valid:
                 self.slotList[x][y].placePiece(redTurn)
-            # If msg is not empty, update the msg
-            if bool(msg):
-                self.label.config(text=msg)
+            # # If msg is not empty, update the msg
+            # if bool(msg):
+            #     self.label.config(text=msg)
             self.last_time = time()
 
     def AIMove(self):
@@ -71,13 +72,15 @@ class slot:
         else:
             self.canvas.create_oval(2,2,101,101, fill='green')
 
-        # Immediately followed by AI move
-        self.board.turn = not self.board.turn
-        if self.board.turn:
-            self.board.AIMove()
+        # # Immediately followed by AI move
+        # self.board.turn = not self.board.turn
+        # if self.board.turn:
+        #     self.board.AIMove()
 
 
 if __name__ == '__main__':
     wnd = Tk()
-    game = gameBoard(wnd)
+    player1 = humanGUIPlayer()
+    player2 = humanGUIPlayer()
+    game = gameBoard(wnd, [player1, player2])
     mainloop()
