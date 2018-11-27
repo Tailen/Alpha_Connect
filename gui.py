@@ -60,8 +60,10 @@ if __name__ == '__main__':
     # wnd = Tk()
     # game = gameBoard(wnd)
     # mainloop()
-    pygame.init()
-    gameDisplay = pygame.display.set_mode((800,600))
+    fps = 30
+    i = pygame.init()
+    print(i)
+    gameDisplay = pygame.display.set_mode((800, 600))
     pygame.display.set_caption('Alpha Connect')
     clock = pygame.time.Clock()
     crashed = False
@@ -69,8 +71,10 @@ if __name__ == '__main__':
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 crashed == True
+                pygame.quit()
             print(event)
         pygame.display.update()
-        clock.tick(30)
+        clock.tick(fps)
+    pygama.display.quit() 
     pygame.quit()
     quit()
