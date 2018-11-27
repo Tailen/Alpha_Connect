@@ -6,6 +6,7 @@ from random import randint
 # Use epsilon to prevent division by zero
 global epsilon
 epsilon = np.finfo(float).eps
+# A list that store depths of every treeNode created
 global depthList
 depthList = []
 
@@ -28,7 +29,6 @@ class MCTSPlayer(object):
         return self.move
 
 
-
 # Class for a node on the Monte Carlo Tree Search
 class treeNode(object):
     
@@ -42,7 +42,7 @@ class treeNode(object):
         self.player = player
         self.parent = parent
         self.children = {}
-        # Test code to check node depths
+        # Record the node depths
         if parent == None:
             self.depth = 1
         else:
@@ -90,12 +90,10 @@ class treeNode(object):
         if self.parent != None:
             self.parent.backprop(winner)
 
+    # Calculate score of UCT(UCB1 for Trees) formula
     def getUCT(self):
         # Get number of simulations of parent node
-        # if parent != None:
         N = self.parent.n
-        # else:
-        #     self.N = None
         return (1.0*self.w/(self.n+epsilon)) + self.c*np.sqrt(np.log(N)/(self.n+epsilon))
 
 
@@ -103,7 +101,7 @@ class treeNode(object):
 class searchTree(object):
     
     def __init__(self, board):
-        # Start player is Green
+        # Start player is always the other player
         self.rootNode = treeNode(board, player=board.redTurn, c=np.sqrt(2), parent=None)
         self.currentNode = self.rootNode
 
@@ -123,4 +121,3 @@ class searchTree(object):
         print(len(depthList), 'instances of treeNode created')
         print('Maximum depth is ', max(depthList))
         return min(childNodes.items(), key=lambda i: 1.0*i[1].w/(i[1].n+epsilon))[0]
-        
