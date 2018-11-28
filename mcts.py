@@ -3,10 +3,8 @@ from copy import deepcopy
 from operator import itemgetter
 from random import randint
 # Use epsilon to prevent division by zero
-global epsilon
 epsilon = np.finfo(float).eps
 # A list that store depths of every treeNode created
-global depthList
 depthList = []
 
 
@@ -46,7 +44,7 @@ class treeNode(object):
             self.depth = 1
         else:
             self.depth = parent.depth + 1
-        # print("Node depth is ", self.depth)
+        global depthList
         depthList.append(self.depth)
         
     def select(self):
@@ -91,6 +89,7 @@ class treeNode(object):
 
     # Calculate score of UCT(UCB1 for Trees) formula
     def getUCT(self):
+        global epsilon
         # Get number of simulations of parent node
         N = self.parent.n
         return (1.0*self.w/(self.n+epsilon)) + self.c*np.sqrt(np.log(N)/(self.n+epsilon))
@@ -116,7 +115,9 @@ class searchTree(object):
         self.currentNode.backprop(winner)
     
     def getMove(self):
+        global epsilon, depthList
         childNodes = self.rootNode.children
         print(len(depthList), 'instances of treeNode created')
         print('Maximum depth is ', max(depthList))
         return min(childNodes.items(), key=lambda i: 1.0*i[1].w/(i[1].n+epsilon))[0]
+        

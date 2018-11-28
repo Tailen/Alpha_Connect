@@ -3,8 +3,8 @@ import time # For timing between moves to prevent unintended placements
 from game import game # The basic machanics of the game
 import os # To traverse directories and load images
 
-from threading import Thread, Lock
-l = Lock()
+from threading import Thread
+from players import humanPlayer
 
 
 class gameBoard:
@@ -64,11 +64,12 @@ def showStartScreen(isFullscreen=False):
     # Initialize button instances
     minimizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_minimize', command=setWindowed)
     maximizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_maximize', command=setFullScreen)
-    playBtn = button(playBtnPos, 233, 239, 'btn_play', 
+    playBtn = button(playBtnPos, 233, 239, 'btn_play',
         animate=True, command=lambda: showGameScreen(isFullscreen))
     # Start screen main loop
     running = True
     isFullscreen = False
+<<<<<<< HEAD
 
     proc_id = subprocess.Popen('python ',
                                 stderr=open("error.txt","w"),
@@ -76,6 +77,8 @@ def showStartScreen(isFullscreen=False):
                                 stdin=open("input.txt","r"),
                                 shell=True)
 
+=======
+>>>>>>> 856b8388bb42a81ea9ec8f4d1866eb90dbb9bf92
     while running:
         # Check events
         for event in pygame.event.get():
@@ -105,14 +108,14 @@ def showStartScreen(isFullscreen=False):
     # Quit program if main loop break
     quitGame()
 
-def startGame():
-    from players import humanPlayer
-    l.acquire()
-    player1 = humanPlayer()
-    player2 = humanPlayer()
-    myGame = game(players=(player1, player2))
-    myGame.startGame()
-    l.release
+# def startGame():
+#     from players import humanPlayer
+#     l.acquire()
+#     player1 = humanPlayer()
+#     player2 = humanPlayer()
+#     myGame = game(players=(player1, player2))
+#     myGame.startGame()
+#     l.release
 
 # Show opponent selection screen
 def showSelectScreen(isFullscreen=False):
@@ -261,7 +264,7 @@ screenInfo = pygame.display.Info()
 imageDic = {} # A dictionary of image names to the images
 for filename in os.listdir(imageFolderPath):
     if filename.endswith('.png'):
-        path = os.path.join(imageFolderPath, filename)  
+        path = os.path.join(imageFolderPath, filename)
         imageName = filename[:-4]
         imageDic[imageName] = pygame.image.load(path).convert_alpha()
 # Resize backgrounds to default width and height
@@ -274,5 +277,21 @@ scaleRatio = 1.0 * maxWidth / defaultWidth
 max_fullscreenBtnPos = (fullscreenBtnPos[0]*scaleRatio, fullscreenBtnPos[1]*scaleRatio)
 max_playBtnPos = (playBtnPos[0]*scaleRatio, playBtnPos[1]*scaleRatio)
 
-# Open start screen
-showStartScreen()
+
+# Test threading and multiprocessing feasibilities
+def playGame():
+    print('parent process id:', os.getppid())
+    print('process id:', os.getpid())
+    player1 = humanPlayer()
+    player2 = humanPlayer()
+    myGame = game(players=(player1, player2))
+    myGame.startGame()
+
+if __name__ == "__main__":
+#     # move = Value('i', 0)
+#     # Start GUI process
+#     GUIProcess = Process(target=showStartScreen)
+#     GUIProcess.start()
+    gameThread = Thread(target=playGame)
+    gameThread.start()
+    showStartScreen()
