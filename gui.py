@@ -70,8 +70,11 @@ def showStartScreen(isFullscreen=False):
     running = True
     isFullscreen = False
 
-    t = Thread(target=startGame)
-    t.start
+    proc_id = subprocess.Popen('python ',
+                                stderr=open("error.txt","w"),
+                                stdout=open("output.txt", "w"),
+                                stdin=open("input.txt","r"),
+                                shell=True)
 
     while running:
         # Check events
