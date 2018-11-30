@@ -283,5 +283,6 @@ if __name__ == "__main__":
 #     GUIProcess = Process(target=showStartScreen)
 #     GUIProcess.start()
     gameThread = Thread(target=playGame)
+    gameThread.daemon = True # Terminate when main thread terminates
     gameThread.start()
     showStartScreen()
