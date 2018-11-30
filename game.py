@@ -2,7 +2,7 @@ from random import randint
 from players import humanPlayer
 
 
-# For simpler reading x is red, o is green
+# For simpler reading x is red, o is yellow
 class game(object):
 
     # Print msgs and errors if cout is True, players is a list of two player objects
@@ -10,15 +10,16 @@ class game(object):
         # (0,0) is top left corner
         self.slots = [['-' for i in range(6)] for i in range(7)]
         self.gameEnded = False
-        self.winner = None # False(0) for red(x) won, True(1) for green(o) won, -1 for draw
+        self.winner = None # False(0) for red(x) won, True(1) for yellow(o) won, -1 for draw
         # Decide who plays first, 0 then first player(red) plays first
         self.redTurn = bool(randint(0, 1))
         self.cout = cout
         self.players = players
-        if self.redTurn and cout: print('Green(o) plays first\n')
+        if self.redTurn and cout: print('Yellow(o) plays first\n')
         elif cout: print('Red(x) plays first\n')
         # True if the board is modified after GUI update
         self.modified = False
+        self.lastMove = (None, None)
 
     def startGame(self):
         if self.cout: print(self)
@@ -63,7 +64,7 @@ class game(object):
         elif self.checkPlayerWon('o'):
             self.gameEnded = True
             self.winner = 1
-            if self.cout: print('Well Played! Green(o) player won!')
+            if self.cout: print('Well Played! Yellow(o) player won!')
         elif self.checkDraw():
             self.gameEnded = True
             if self.cout: print('Well played! Draw!')
@@ -99,6 +100,7 @@ class game(object):
             c = 'o'
         self.slots[x][y] = c
         self.modified = True
+        self.lastMove = (x, y)
 
     def checkDraw(self):
         for x in range(7):
