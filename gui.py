@@ -2,9 +2,9 @@ import pygame # For building the GUI
 import time # For timing between moves to prevent unintended placements
 from game import game # The basic machanics of the game
 import os # To traverse directories and load images
-
-from threading import Thread
-from players import humanPlayer
+from random import randint
+from threading import Thread, Event, Lock
+from players import humanGUIPlayer
 
 
 class gameBoard:
@@ -57,6 +57,12 @@ blue = (0, 0, 255)
 # Default button positions
 fullscreenBtnPos = (15, 15)
 playBtnPos = (810, 330)
+boardFrontPos = (180, 50)
+boardBackPos = (212, 54)
+turnLabelPos = (900, 330)
+# Initialize threading lock objects
+moveEvent = Event() # Block gameTread when waiting GUIPlayer input
+boardLock = Lock() # Block gameTread when updating board postitions
 
 
 # Show start sceen
@@ -84,7 +90,7 @@ def showStartScreen(isFullscreen=False):
         gameDisplay.blit(imageDic['bg_menu'], (0, 0))
         playBtn.update()
         if isFullscreen:
-            if minimizeBtn.update():
+            if minimizeBtn.update(): # button.update returns True if button is clicked
                 isFullscreen = False
             # Scale gameDisplay to fit onto root
             root.blit(pygame.transform.smoothscale(gameDisplay, (maxWidth, maxHeight)), (0, 0))
@@ -96,16 +102,7 @@ def showStartScreen(isFullscreen=False):
         # Set framerate
         clock.tick(fps)
     # Quit program if main loop break
-    quitGame()
-
-# def startGame():
-#     from players import humanPlayer
-#     l.acquire()
-#     player1 = humanPlayer()
-#     player2 = humanPlayer()
-#     myGame = game(players=(player1, player2))
-#     myGame.startGame()
-#     l.release
+    quitWindow()
 
 # Show opponent selection screen
 def showSelectScreen(isFullscreen=False):
@@ -135,12 +132,25 @@ def showSelectScreen(isFullscreen=False):
         # Set framerate
         clock.tick(fps)
     # Quit program if main loop break
-    quitGame()
+    quitWindow()
 
 # Show game screen
 def showGameScreen(isFullscreen=False):
     # Initialize button instances
-
+    minimizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_minimize', command=setWindowed)
+    maximizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_maximize', command=setFullScreen)
+    turnLabel = button(turnLabelPos, 184, 195, 'bg_turn')
+    tracker = rowTracker() # Responsible for passing the gui input to player class
+    # Randomize the order of how two players are passed to game
+    player1 = humanGUIPlayer(moveEvent)
+    player2 = humanGUIPlayer(moveEvent)
+    player1Turn = randint(0, 1)
+    if player1Turn:
+        gameThread = Thread(target=startBackend, args=[player1, player2], daemon=True)
+    else:
+        gameThread = Thread(target=startBackend, args=[player2, player1], daemon=True)
+    # Start gameThread
+    gameThread.start()
     # Game screen main loop
     running = True
     while running:
@@ -156,36 +166,58 @@ def showGameScreen(isFullscreen=False):
                     running = False
         # Update display
         gameDisplay.blit(imageDic['bg_game'], (0, 0))
-        gameDisplay.blit(imageDic['board_back'], (32, 14))
-        gameDisplay.blit(imageDic['board_front'], (0, 10))
+        with boardLock:
+            if gameBackend.modified:
+                player1Turn = not player1Turn
+                # Update the GUI pieces based on lastMove and start new piece animation
+                
+                gameBackend.modified = False
+                print(gameBackend)
+        gameDisplay.blit(imageDic['board_back'], boardBackPos)
+        gameDisplay.blit(imageDic['board_front'], boardFrontPos)
+        turnLabel.update()
+        tracker.update(player1Turn, (player1, player2))
         if isFullscreen:
+            if minimizeBtn.update(): # button.update returns True if button is clicked
+                isFullscreen = False
             # Scale gameDisplay to fit onto root
             root.blit(pygame.transform.smoothscale(gameDisplay, (maxWidth, maxHeight)), (0, 0))
         else:
+            if maximizeBtn.update():
+                isFullscreen = True
             root.blit(gameDisplay, (0, 0))
         pygame.display.flip()
         # Set framerate
         clock.tick(fps)
     # Quit program if main loop break
-    quitGame()
+    quitWindow()
 
 # Set the gameDisplay to fullscren mode, enable hardware acceleration and double buffering
 def setFullScreen():
     # Scale display and image sizes
     pygame.display.set_mode(
         (maxWidth, maxHeight), pygame.FULLSCREEN | pygame.HWSURFACE | pygame.DOUBLEBUF)
-    # imageDic['bg_menu'] = pygame.transform.smoothscale(imageDic['bg_menu'], (maxWidth, maxHeight))
-    # imageDic['bg_menu'] = pygame.transform.smoothscale(imageDic['bg_menu'], (maxWidth, maxHeight))
+    # Set currentScreenScale to fullscreen scale
+    global currentScreenScale
+    currentScreenScale = scaleRatio
 
 # Set the gameDisplay to windowed mode, disable hardware acceleration and double buffering
 def setWindowed():
     # Scale display and image sizes
     pygame.display.set_mode((defaultWidth, defaultHeight))
-    # imageDic['bg_menu'] = pygame.transform.smoothscale(imageDic['bg_menu'], (defaultWidth, defaultHeight))
-    # imageDic['bg_menu'] = pygame.transform.smoothscale(imageDic['bg_menu'], (defaultWidth, defaultHeight))
+    # Set currentScreenScale to windowed scale (1.0)
+    global currentScreenScale
+    currentScreenScale = 1.0
+
+def quitGame(gameThread):
+    # Set gameEnded to end gameThread
+    gameBackend.gameEnded = True
+    # Raise 'Are you sure?' window, then call startScreen
+    if True:
+        gameThread.join()
 
 # Uninitialize pygame, then python
-def quitGame():
+def quitWindow():
     pygame.quit()
     quit()
 
@@ -210,19 +242,23 @@ class button:
             if self.currentScale > 1.05 or self.currentScale < 0.95:
                 self.growingSpeed = -self.growingSpeed
             self.currentScale += self.growingSpeed
-            scaledImage = pygame.transform.smoothscale(imageDic[self.imageName], (
-                int(self.width*self.currentScale), int(self.height*self.currentScale)))
-            scaledX = self.pos[0] + self.width*(1-self.currentScale)/2
-            scaledY = self.pos[1] + self.height*(1-self.currentScale)/2
-            gameDisplay.blit(scaledImage, (scaledX, scaledY))
+            # Set current x, y, width, height to animation scaled version
+            c_W = int(self.width*self.currentScale*currentScreenScale)
+            c_H = int(self.height*self.currentScale*currentScreenScale)
+            scaledImage = pygame.transform.smoothscale(imageDic[self.imageName], (c_W, c_H))
+            c_X = int((self.pos[0] + self.width*(1-self.currentScale)/2) * currentScreenScale)
+            c_Y = int((self.pos[1] + self.height*(1-self.currentScale)/2) * currentScreenScale)
+            gameDisplay.blit(scaledImage, (c_X, c_Y))
         else: # Refresh the static image
-            gameDisplay.blit(imageDic[self.imageName], self.pos)
+            # For static button, current position and dimension is default times screenScale
+            (c_X, c_Y, c_W, c_H) = tuple([i*currentScreenScale for i in (
+                self.pos[0], self.pos[1], self.width, self.height)])
+            gameDisplay.blit(imageDic[self.imageName], (c_X, c_Y))
         # Get information about the mouse
         mousePos = pygame.mouse.get_pos()
         mousePress = pygame.mouse.get_pressed()[0]
-        x = self.pos[0]
-        y = self.pos[1]
-        if x <= mousePos[0] <= x+self.width and y <= mousePos[1] <= y+self.height:
+        # Check overlap
+        if c_X <= mousePos[0] <= c_X+c_W and c_Y <= mousePos[1] <= c_Y+c_H:
             # If cursor overlaps the input area, change the cursor
             if not self.onButton:
                 pygame.mouse.set_cursor(*pygame.cursors.ball)
@@ -236,6 +272,22 @@ class button:
             pygame.mouse.set_cursor(*pygame.cursors.arrow)
             self.onButton = False
         return False
+
+
+class rowTracker:
+
+    def __init__(self):
+        self.currentX = 0
+           
+    def update(self, player1Turn, players):
+        # Get information about the mouse
+        mousePos = pygame.mouse.get_pos()
+        mousePress = pygame.mouse.get_pressed()[0]
+        if mousePress:
+            # Select the current player and input move
+            players[not player1Turn].GUIInput(3)
+            # Release the lock on backend
+            moveEvent.set()
 
 
 # Initialize pygame
@@ -263,26 +315,29 @@ imageDic['bg_game'] = pygame.transform.smoothscale(imageDic['bg_game'], (default
 # Retreive the fullscreen(max) width and height of the display 
 (maxWidth, maxHeight) = pygame.display.list_modes()[0]
 scaleRatio = 1.0 * maxWidth / defaultWidth
-# Calculate fullscreen object positions based on the scale ratio
-max_fullscreenBtnPos = (fullscreenBtnPos[0]*scaleRatio, fullscreenBtnPos[1]*scaleRatio)
-max_playBtnPos = (playBtnPos[0]*scaleRatio, playBtnPos[1]*scaleRatio)
+currentScreenScale = 1.0
 
 
-# Test threading and multiprocessing feasibilities
-def playGame():
-    print('parent process id:', os.getppid())
-    print('process id:', os.getpid())
-    player1 = humanPlayer()
-    player2 = humanPlayer()
-    myGame = game(players=(player1, player2))
-    myGame.startGame()
+# Run game in background with another thread
+def startBackend(playerA, playerB):
+    # Block the main thread until gameBackend is initialized
+    with boardLock:
+        print('parent process id:', os.getppid())
+        print('process id:', os.getpid())
+        # Set globals so gameScreen have access to game object
+        global gameBackend
+        gameBackend = game(players=(playerA, playerB), cout=True)
+    gameBackend.startGame()
 
 if __name__ == "__main__":
 #     # move = Value('i', 0)
 #     # Start GUI process
 #     GUIProcess = Process(target=showStartScreen)
 #     GUIProcess.start()
+<<<<<<< HEAD
     gameThread = Thread(target=playGame)
     gameThread.daemon = True # Terminate when main thread terminates
     gameThread.start()
+=======
+>>>>>>> 201f2d9ca66df73f7f92ce67b8abb3824192e2f3
     showStartScreen()

@@ -29,7 +29,7 @@ class MCTSPlayer(object):
 # Class for a node on the Monte Carlo Tree Search
 class treeNode(object):
     
-    # Player is 0 for green or 1 for red (True or False)
+    # Player is 0 for red or 1 for yellow (True or False)
     def __init__(self, board, player, c=np.sqrt(2), parent=None):
         self.isLeaf = True # Indicates if the tree node is a leaf node
         self.n = 0 # Number of simulations after this move

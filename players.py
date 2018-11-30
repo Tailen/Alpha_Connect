@@ -16,10 +16,13 @@ class humanPlayer:
 
 class humanGUIPlayer:
 
-    def __init__(self):
+    def __init__(self, moveEvent):
+        self.moveEvent = moveEvent
         self.move = None
 
     def getMove(self, game):
+        self.moveEvent.clear()
+        self.moveEvent.wait()
         return self.move
 
     def GUIInput(self, move):

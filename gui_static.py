@@ -70,7 +70,7 @@ class slot:
             self.canvas.create_oval(2,2,101,101, fill='red')
             # self.canvas.create_oval(0,0,int(self.canvas.cget('width'))/2,int(self.canvas.cget('height'))/2, fill='red')
         else:
-            self.canvas.create_oval(2,2,101,101, fill='green')
+            self.canvas.create_oval(2,2,101,101, fill='yellow')
 
         # # Immediately followed by AI move
         # self.board.turn = not self.board.turn
