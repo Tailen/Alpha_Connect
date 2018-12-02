@@ -5,7 +5,7 @@ import threading
 class humanPlayer:
 
     def __init__(self):
-        return
+        self.name = 'Human'
     
     def getMove(self, game):
         moveStr = input('Please enter the column of your move: ')
@@ -17,12 +17,13 @@ class humanPlayer:
 class humanGUIPlayer:
 
     def __init__(self, moveEvent):
+        self.name = 'Human'
         self.moveEvent = moveEvent
         self.move = None
 
     def getMove(self, game):
-        self.moveEvent.clear()
         self.moveEvent.wait()
+        self.moveEvent.clear()
         return self.move
 
     def GUIInput(self, move):
@@ -32,7 +33,7 @@ class humanGUIPlayer:
 class MCTSPlayer:
 
     def __init__(self):
-        return
+        self.name = 'AI'
 
     def getMove(self, game):
         return
@@ -41,7 +42,7 @@ class MCTSPlayer:
 class AlphaConnectPlayer:
 
     def __init__(self):
-        return
+        self.name = 'AI'
 
     def getMove(self, game):
         return

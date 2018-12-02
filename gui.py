@@ -7,46 +7,8 @@ from threading import Thread, Event, Lock
 from players import humanGUIPlayer
 
 
-class gameBoard:
-
-    def __init__(self, wnd):
-        # Create main window
-        self.wnd = wnd
-        self.wnd.title('Connect++')
-        self.game = board()
-        # Set Grid to resize with main window
-        for x in range(7):
-            self.wnd.columnconfigure(x, weight=1)
-        for y in range(2):
-            self.wnd.rowconfigure(y, weight=1)
-        # Create 42 slots in main window
-        self.slotList = [[] for i in range(7)]
-        for x in range(7):
-            self.slotList[x].append(stack(self.wnd, x, self))
-        # Create Frame and label below all slots
-        self.bottomFrame = Frame(self.wnd, borderwidth=1, relief='solid')
-        self.bottomFrame.grid(column=0, row=1, columnspan=7, sticky='EWSN')
-        self.label = Label(self.bottomFrame, text='Good Luck, Have Fun!', font=("Courier", 18))
-        self.label.pack()
-        # Initialize last_time
-        self.last_time = time.time()
-
-    def makeMove(self, x):
-        if (not self.game.gameEnded) and (time.time()-self.last_time) > 0.5:
-            redTurn, _, y, msg = self.game.placeMove(x+1) # Input of placeMove is 1-7
-            if y != -1:
-                self.slotList[x][y].placePiece(redTurn)
-            # If msg is not empty, update the msg
-            if bool(msg):
-                self.label.config(text=msg)
-            self.last_time = time.time()
-
-
-
-
-
 # Set constants and defaults
-fps = 30
+fps = 60
 defaultWidth, defaultHeight = 1280, 720
 imageFolderPath = './pic/'
 # Preset color values
@@ -57,9 +19,9 @@ blue = (0, 0, 255)
 # Default button positions
 fullscreenBtnPos = (15, 15)
 playBtnPos = (810, 330)
-boardFrontPos = (180, 50)
-boardBackPos = (212, 54)
-turnLabelPos = (900, 330)
+boardFrontPos = (180, 60)
+boardBackPos = (212, 64)
+turnLabelPos = (990, 420)
 # Initialize threading lock objects
 moveEvent = Event() # Block gameTread when waiting GUIPlayer input
 boardLock = Lock() # Block gameTread when updating board postitions
@@ -139,8 +101,7 @@ def showGameScreen(isFullscreen=False):
     # Initialize button instances
     minimizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_minimize', command=setWindowed)
     maximizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_maximize', command=setFullScreen)
-    turnLabel = button(turnLabelPos, 184, 195, 'bg_turn')
-    tracker = rowTracker() # Responsible for passing the gui input to player class
+    tracker = columnTracker() # Responsible for passing the gui input to player class
     # Randomize the order of how two players are passed to game
     player1 = humanGUIPlayer(moveEvent)
     player2 = humanGUIPlayer(moveEvent)
@@ -149,6 +110,7 @@ def showGameScreen(isFullscreen=False):
         gameThread = Thread(target=startBackend, args=[player1, player2], daemon=True)
     else:
         gameThread = Thread(target=startBackend, args=[player2, player1], daemon=True)
+    turnLabel = TurnLabel(turnLabelPos, player1Turn, player1.name, player2.name)
     # Start gameThread
     gameThread.start()
     # Game screen main loop
@@ -221,6 +183,13 @@ def quitWindow():
     pygame.quit()
     quit()
 
+def show_text(text, size, pos, width, height):
+    font = pygame.font.Font('FreeSans.ttf', size)
+    TextSurf = font.render(text, True, black)
+    TextRect = TextSurf.get_rect()
+    TextRect.center = ((pos[0]+width/2),(pos[1]+height/2))
+    gameDisplay.blit(TextSurf, TextRect)
+
 
 class button:
 
@@ -236,27 +205,32 @@ class button:
         self.growingSpeed = 0.15/fps
 
     # Check if cursor overlaps button area, change cursor shape, and return pressed status
+    # Mind that rendered screen and root screen are different: 
+    # gameDisplay is always default width and height, root scales to current screen size
+    # Drawn images are on gameScreen, while mouse clicks are on root screen
     def update(self):
         # Animate the button
         if self.animate:
             if self.currentScale > 1.05 or self.currentScale < 0.95:
                 self.growingSpeed = -self.growingSpeed
             self.currentScale += self.growingSpeed
-            # Set current x, y, width, height to animation scaled version
-            c_W = int(self.width*self.currentScale*currentScreenScale)
-            c_H = int(self.height*self.currentScale*currentScreenScale)
-            scaledImage = pygame.transform.smoothscale(imageDic[self.imageName], (c_W, c_H))
-            c_X = int((self.pos[0] + self.width*(1-self.currentScale)/2) * currentScreenScale)
-            c_Y = int((self.pos[1] + self.height*(1-self.currentScale)/2) * currentScreenScale)
-            gameDisplay.blit(scaledImage, (c_X, c_Y))
-        else: # Refresh the static image
-            # For static button, current position and dimension is default times screenScale
-            (c_X, c_Y, c_W, c_H) = tuple([i*currentScreenScale for i in (
-                self.pos[0], self.pos[1], self.width, self.height)])
-            gameDisplay.blit(imageDic[self.imageName], (c_X, c_Y))
+            # Calculate animation scaled drawn width, height, and x, y
+            d_W = int(self.width*self.currentScale)
+            d_H = int(self.height*self.currentScale)
+            scaledImage = pygame.transform.smoothscale(imageDic[self.imageName], (d_W, d_H))
+            d_X = int(self.pos[0] + self.width*(1-self.currentScale)/2)
+            d_Y = int(self.pos[1] + self.height*(1-self.currentScale)/2)
+            gameDisplay.blit(scaledImage, (d_X, d_Y))
+        else: 
+            # For static images, drawn width, height, and x, y are equal to default
+            d_X, d_Y, d_W, d_H = self.pos[0], self.pos[1], self.width, self.height
+            # Refresh the static image
+            gameDisplay.blit(imageDic[self.imageName], (d_X, d_Y))
         # Get information about the mouse
         mousePos = pygame.mouse.get_pos()
         mousePress = pygame.mouse.get_pressed()[0]
+        # Calculate cursor width, height, and x, y based on respective drawn ones 
+        (c_X, c_Y, c_W, c_H) = tuple([i*currentScreenScale for i in (d_X, d_Y, d_W, d_H)])
         # Check overlap
         if c_X <= mousePos[0] <= c_X+c_W and c_Y <= mousePos[1] <= c_Y+c_H:
             # If cursor overlaps the input area, change the cursor
@@ -265,6 +239,7 @@ class button:
                 self.onButton = True
             # Execute command if mouse is pressed on the button
             if mousePress:
+                pygame.mouse.set_cursor(*pygame.cursors.arrow) # Turn cursor back to arrow if click
                 if self.command != None: self.command()
                 return True
         # Change the cursor back to arrow if moved away from button
@@ -274,20 +249,101 @@ class button:
         return False
 
 
-class rowTracker:
+class TurnLabel:
+
+    def __init__(self, pos, player1Turn, player1Name, player2Name):
+        self.pos = pos
+        self.piecePos = (pos[0]+52, pos[1]+66)
+        self.textPos = (pos[0]+27, pos[1]+17)
+        self.player1Turn = player1Turn
+        self.player1Name = player1Name
+        self.player2Name = player2Name
+
+    # Check current turn, and change turn label if applicable
+    def update(self):
+        gameDisplay.blit(imageDic['bg_turn'], self.pos)
+        if gameBackend.redTurn:
+            gameDisplay.blit(imageDic['red_piece'], self.piecePos)
+        else:
+            gameDisplay.blit(imageDic['yellow_piece'], self.piecePos)
+        # Show text 'Human Turn' or 'AI Turn' if is a AI vs Human game 
+        if self.player1Name != self.player2Name:
+            if self.player1Turn:
+                show_text((self.player1Name+' Turn'), 21, self.textPos, 130, 24)
+            else:
+                show_text((self.player2Name+' Turn'), 21, self.textPos, 130, 24)
+        # Else show 'Player 1' or 'Player 2' directly
+        else: 
+            if self.player1Turn:
+                show_text('Player1 Turn', 21, self.textPos, 130, 24)
+            else:
+                show_text('Player2 Turn', 21, self.textPos, 130, 24)
+
+
+class columnTracker:
+
+    # Class constants
+    trackerY = 6
+    # Boarder X for tracker and droped game pieces
+    trackerXList = [boardFrontPos[0]+66+i*92 for i in range(8)]
+    pieceXList = [boardFrontPos[0]+77+i*92 for i in range(7)]
+    # How many frames used for one animation
+    totalFrame = int(fps/2)
 
     def __init__(self):
-        self.currentX = 0
-           
+        # Put the tracker on 4th column(center) when first initialized
+        self.trackerColumn = 3
+        # 46 is half the distance between slots
+        self.currentX = columnTracker.trackerXList[self.trackerColumn] + 46
+        self.targetX = self.currentX
+        self.animating = False
+        self.frameCount = 0
+        
     def update(self, player1Turn, players):
         # Get information about the mouse
-        mousePos = pygame.mouse.get_pos()
+        cursorX = pygame.mouse.get_pos()[0]
         mousePress = pygame.mouse.get_pressed()[0]
+        # Animate and move the tracker
+        for i in range(7):
+            if columnTracker.trackerXList[i] < cursorX < columnTracker.trackerXList[i+1]:
+                if i != self.trackerColumn:
+                    self.trackerColumn = i
+                    self.targetX = columnTracker.trackerXList[self.trackerColumn] + 46
+                    self.__getMoveList()
+                    self.animating = True
+                    self.frameCount = 0
+        # Display tracker at the current column if target column did not change
+        if self.animating:
+            self.__animate()
+        else:
+            # -50 is to compensate distance from top-left corner of image to point of the tracker
+            gameDisplay.blit(imageDic['arrow'], (self.currentX-50, columnTracker.trackerY))
+        # Send input to player instances
         if mousePress:
             # Select the current player and input move
-            players[not player1Turn].GUIInput(3)
-            # Release the lock on backend
+            players[not player1Turn].GUIInput(self.trackerColumn)
+            # Release the block on backend
             moveEvent.set()
+
+    # Animate the move from one column to another based on calculated moveList
+    def __animate(self):
+        self.currentX = self.moveList[self.frameCount]
+        gameDisplay.blit(imageDic['arrow'], (self.currentX-50, columnTracker.trackerY))
+        self.frameCount += 1
+        if self.frameCount == columnTracker.totalFrame:
+            self.animating = False
+
+    # Return the list of move steps of the animation
+    def __getMoveList(self):
+        f = columnTracker.totalFrame
+        # Ease in/ease out intervals in range [0, 1] 
+        intervals = [self.__parametricBlend((i+1)/f) for i in range(f)]
+        self.moveList = [int((self.targetX-self.currentX)*i+self.currentX) for i in intervals]
+
+    # Calculate the parametric equation to achieve ease in/ease out animation
+    def __parametricBlend(self, t):
+        sqt = t**2
+        return sqt / (2.0 * (sqt - t) + 1.0)
 
 
 # Initialize pygame
