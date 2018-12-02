@@ -103,8 +103,8 @@ def showGameScreen(isFullscreen=False):
     maximizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_maximize', command=setFullScreen)
     tracker = columnTracker() # Responsible for passing the gui input to player class
     # Randomize the order of how two players are passed to game
-    player1 = humanGUIPlayer(moveEvent)
-    player2 = humanGUIPlayer(moveEvent)
+    player1 = humanGUIPlayer()
+    player2 = humanGUIPlayer()
     player1Turn = randint(0, 1)
     if player1Turn:
         gameThread = Thread(target=startBackend, args=[player1, player2], daemon=True)
@@ -382,7 +382,7 @@ def startBackend(playerA, playerB):
         print('process id:', os.getpid())
         # Set globals so gameScreen have access to game object
         global gameBackend
-        gameBackend = game(players=(playerA, playerB), cout=True)
+        gameBackend = game(players=(playerA, playerB), cout=True, moveEvent=moveEvent)
     gameBackend.startGame()
 
 if __name__ == "__main__":

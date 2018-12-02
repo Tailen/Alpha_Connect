@@ -6,7 +6,7 @@ from players import humanPlayer
 class game(object):
 
     # Print msgs and errors if cout is True, players is a list of two player objects
-    def __init__(self, players, cout=True):
+    def __init__(self, players, cout=True, moveEvent=None):
         # (0,0) is top left corner
         self.slots = [['-' for i in range(6)] for i in range(7)]
         self.gameEnded = False
@@ -15,6 +15,7 @@ class game(object):
         self.redTurn = bool(randint(0, 1))
         self.cout = cout
         self.players = players
+        self.moveEvent = moveEvent
         if self.redTurn and cout: print('Yellow(o) plays first\n')
         elif cout: print('Red(x) plays first\n')
         # True if the board is modified after GUI update
@@ -25,9 +26,6 @@ class game(object):
         if self.cout: print(self)
         while not self.gameEnded:
             move = self.players[self.redTurn].getMove(self)
-            # Wait for GUI input
-            while move == None:
-                move = self.players[self.redTurn].getMove(self)
             self.placeMove(move)
             if self.cout: print('\n' + str(self))
 

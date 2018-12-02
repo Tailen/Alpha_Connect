@@ -5,7 +5,7 @@ import threading
 class humanPlayer:
 
     def __init__(self):
-        self.name = 'Human'
+        self.name = 'Console'
     
     def getMove(self, game):
         moveStr = input('Please enter the column of your move: ')
@@ -16,14 +16,13 @@ class humanPlayer:
 
 class humanGUIPlayer:
 
-    def __init__(self, moveEvent):
+    def __init__(self):
         self.name = 'Human'
-        self.moveEvent = moveEvent
         self.move = None
 
     def getMove(self, game):
-        self.moveEvent.wait()
-        self.moveEvent.clear()
+        game.moveEvent.wait()
+        game.moveEvent.clear()
         return self.move
 
     def GUIInput(self, move):
