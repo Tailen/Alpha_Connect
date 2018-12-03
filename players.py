@@ -1,6 +1,6 @@
 '''Classes of players: Human, HumanGUI, MCTS, and AlphaConnect. Input game and output the move(0-6)'''
-import threading
 
+from mcts import searchTree
 
 class humanPlayer:
 
@@ -16,16 +16,18 @@ class humanPlayer:
 
 class humanGUIPlayer:
 
-    def __init__(self):
+    def __init__(self, moveEvent):
         self.name = 'Human'
+        self.moveEvent = moveEvent
         self.move = None
 
     def getMove(self, game):
-        game.moveEvent.wait()
-        game.moveEvent.clear()
+        self.moveEvent.wait()
+        self.moveEvent.clear()
         return self.move
 
     def GUIInput(self, move):
+        # Wait 1 second to prevent unintentional moves
         self.move = move
 
 
@@ -35,7 +37,14 @@ class MCTSPlayer:
         self.name = 'AI'
 
     def getMove(self, game):
-        return
+        self.gameBoard = game
+        tree = searchTree(self.gameBoard)
+        for _ in range(5000):
+            tree.iterate()
+            # Reset currentNode to rootNode
+            tree.currentNode = tree.rootNode
+        print('getting move')
+        return tree.getMove()
 
 
 class AlphaConnectPlayer:

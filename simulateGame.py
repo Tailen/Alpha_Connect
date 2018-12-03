@@ -123,19 +123,3 @@ class game(object):
             return moveList
         else:
             return [cord[0] for cord in moveList]
-
-    # String representation of the board
-    def __str__(self):
-        s = ''
-        for y in range(6):
-            for x in range(7):
-                s = s + self.slots[x][y] + ' '
-            s = s[:-1] + '\n'
-        return s
-
-
-if __name__ == '__main__':
-    player1 = humanPlayer()
-    player2 = humanPlayer()
-    myGame = game(players=(player1, player2))
-    myGame.startGame()

@@ -20,7 +20,6 @@ class MCTSPlayer(object):
             # Reset currentNode to rootNode
             tree.currentNode = tree.rootNode
         self.move = tree.getMove()
-        print(self.move)
 
     def returnMove(self):
         return self.move
@@ -120,4 +119,3 @@ class searchTree(object):
         print(len(depthList), 'instances of treeNode created')
         print('Maximum depth is ', max(depthList))
         return min(childNodes.items(), key=lambda i: 1.0*i[1].w/(i[1].n+epsilon))[0]
-        

@@ -4,7 +4,7 @@ from game import game # The basic machanics of the game
 import os # To traverse directories and load images
 from random import randint
 from threading import Thread, Event, Lock
-from players import humanGUIPlayer
+from players import humanGUIPlayer, MCTSPlayer
 
 
 # Set constants and defaults
@@ -101,10 +101,11 @@ def showGameScreen(isFullscreen=False):
     # Initialize button instances
     minimizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_minimize', command=setWindowed)
     maximizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_maximize', command=setFullScreen)
-    tracker = columnTracker() # Responsible for passing the gui input to player class
+    tracker = Tracker() # Responsible for passing the gui input to player class
+    gamePieces = Pieces() # Animates the piece drop down
     # Randomize the order of how two players are passed to game
-    player1 = humanGUIPlayer()
-    player2 = humanGUIPlayer()
+    player1 = MCTSPlayer()
+    player2 = humanGUIPlayer(moveEvent)
     player1Turn = randint(0, 1)
     if player1Turn:
         gameThread = Thread(target=startBackend, args=[player1, player2], daemon=True)
@@ -132,12 +133,19 @@ def showGameScreen(isFullscreen=False):
             if gameBackend.modified:
                 player1Turn = not player1Turn
                 # Update the GUI pieces based on lastMove and start new piece animation
-                
+                gamePieces.dropPiece(gameBackend.lastMove)
+
+
+
                 gameBackend.modified = False
-                print(gameBackend)
+            # Update turnLabel if game ended
+            if gameBackend.gameEnded:
+                turnLabel.gameEnded = True
+                turnLabel.winner = gameBackend.winner
         gameDisplay.blit(imageDic['board_back'], boardBackPos)
+        gamePieces.update()
         gameDisplay.blit(imageDic['board_front'], boardFrontPos)
-        turnLabel.update()
+        turnLabel.update(player1Turn)
         tracker.update(player1Turn, (player1, player2))
         if isFullscreen:
             if minimizeBtn.update(): # button.update returns True if button is clicked
@@ -203,6 +211,7 @@ class button:
         self.command = command
         self.currentScale = 1.0
         self.growingSpeed = 0.15/fps
+        self.waitMouseUp = False
 
     # Check if cursor overlaps button area, change cursor shape, and return pressed status
     # Mind that rendered screen and root screen are different: 
@@ -237,9 +246,12 @@ class button:
             if not self.onButton:
                 pygame.mouse.set_cursor(*pygame.cursors.ball)
                 self.onButton = True
-            # Execute command if mouse is pressed on the button
-            if mousePress:
+            # Execute command if mouse is pressed and up on the button
+            if mousePress and not self.waitMouseUp:
+                self.waitMouseUp = True
+            if not mousePress and self.waitMouseUp:
                 pygame.mouse.set_cursor(*pygame.cursors.arrow) # Turn cursor back to arrow if click
+                self.waitMouseUp = False
                 if self.command != None: self.command()
                 return True
         # Change the cursor back to arrow if moved away from button
@@ -258,35 +270,55 @@ class TurnLabel:
         self.player1Turn = player1Turn
         self.player1Name = player1Name
         self.player2Name = player2Name
+        self.gameEnded = False
+        self.winner = None
 
     # Check current turn, and change turn label if applicable
-    def update(self):
+    def update(self, player1Turn):
+        self.player1Turn = player1Turn
         gameDisplay.blit(imageDic['bg_turn'], self.pos)
-        if gameBackend.redTurn:
-            gameDisplay.blit(imageDic['red_piece'], self.piecePos)
+        if not self.gameEnded:
+            if gameBackend.redTurn:
+                gameDisplay.blit(imageDic['red_piece'], self.piecePos)
+            else:
+                gameDisplay.blit(imageDic['yellow_piece'], self.piecePos)
+            # Show text 'Human Turn' or 'AI Turn' if is a AI vs Human game 
+            if self.player1Name != self.player2Name:
+                if self.player1Turn:
+                    show_text((self.player1Name+' Turn'), 21, self.textPos, 130, 24)
+                else:
+                    show_text((self.player2Name+' Turn'), 21, self.textPos, 130, 24)
+            # Else show 'Player 1' or 'Player 2' directly
+            else: 
+                if self.player1Turn:
+                    show_text('Player1 Turn', 21, self.textPos, 130, 24)
+                else:
+                    show_text('Player2 Turn', 21, self.textPos, 130, 24)
+        # Game Ended
         else:
-            gameDisplay.blit(imageDic['yellow_piece'], self.piecePos)
-        # Show text 'Human Turn' or 'AI Turn' if is a AI vs Human game 
-        if self.player1Name != self.player2Name:
-            if self.player1Turn:
-                show_text((self.player1Name+' Turn'), 21, self.textPos, 130, 24)
+            if self.player1Name == self.player2Name:
+                if self.winner == -1:
+                    show_text('Draw! GGWP', 21, self.textPos, 130, 24)
+                elif self.winner == 0:
+                    show_text('Red Won!', 21, self.textPos, 130, 24)
+                else:
+                    show_text('Yellow Won!', 21, self.textPos, 130, 24)
+                # print(self.player1Turn, self.player1Name, self.player2Name)
             else:
-                show_text((self.player2Name+' Turn'), 21, self.textPos, 130, 24)
-        # Else show 'Player 1' or 'Player 2' directly
-        else: 
-            if self.player1Turn:
-                show_text('Player1 Turn', 21, self.textPos, 130, 24)
-            else:
-                show_text('Player2 Turn', 21, self.textPos, 130, 24)
+                if self.winner == -1:
+                    show_text('Draw! GGWP', 21, self.textPos, 130, 24)
+                elif self.player1Turn:
+                    show_text(self.player2Name + ' Won!', 21, self.textPos, 130, 24)
+                else:
+                    show_text(self.player1Name + ' Won!', 21, self.textPos, 130, 24) 
 
 
-class columnTracker:
+class Tracker:
 
     # Class constants
     trackerY = 6
-    # Boarder X for tracker and droped game pieces
+    # Border X for tracker
     trackerXList = [boardFrontPos[0]+66+i*92 for i in range(8)]
-    pieceXList = [boardFrontPos[0]+77+i*92 for i in range(7)]
     # How many frames used for one animation
     totalFrame = int(fps/2)
 
@@ -294,10 +326,12 @@ class columnTracker:
         # Put the tracker on 4th column(center) when first initialized
         self.trackerColumn = 3
         # 46 is half the distance between slots
-        self.currentX = columnTracker.trackerXList[self.trackerColumn] + 46
+        self.currentX = Tracker.trackerXList[self.trackerColumn] + 46
         self.targetX = self.currentX
         self.animating = False
         self.frameCount = 0
+        self.waitMouseUp = False
+        self.last_time = time.time()
         
     def update(self, player1Turn, players):
         # Get information about the mouse
@@ -305,10 +339,10 @@ class columnTracker:
         mousePress = pygame.mouse.get_pressed()[0]
         # Animate and move the tracker
         for i in range(7):
-            if columnTracker.trackerXList[i] < cursorX < columnTracker.trackerXList[i+1]:
+            if Tracker.trackerXList[i] < cursorX < Tracker.trackerXList[i+1]:
                 if i != self.trackerColumn:
                     self.trackerColumn = i
-                    self.targetX = columnTracker.trackerXList[self.trackerColumn] + 46
+                    self.targetX = Tracker.trackerXList[self.trackerColumn] + 46
                     self.__getMoveList()
                     self.animating = True
                     self.frameCount = 0
@@ -317,25 +351,33 @@ class columnTracker:
             self.__animate()
         else:
             # -50 is to compensate distance from top-left corner of image to point of the tracker
-            gameDisplay.blit(imageDic['arrow'], (self.currentX-50, columnTracker.trackerY))
+            gameDisplay.blit(imageDic['arrow'], (self.currentX-50, Tracker.trackerY))
+        # Detect mouse down and wait for mouse up
+        if mousePress and not self.waitMouseUp:
+            # Any move within 1 sec will be discarded to prevent unwanted moves
+            if (time.time() - self.last_time) > 1:
+                self.last_time = time.time()
+                self.waitMouseUp = True
         # Send input to player instances
-        if mousePress:
-            # Select the current player and input move
-            players[not player1Turn].GUIInput(self.trackerColumn)
-            # Release the block on backend
-            moveEvent.set()
+        if not mousePress and self.waitMouseUp:
+            self.waitMouseUp = False
+            if players[not player1Turn].name == 'Human':
+                # Select the current player and input move
+                players[not player1Turn].GUIInput(self.trackerColumn)
+                # Release the block on backend
+                moveEvent.set()
 
     # Animate the move from one column to another based on calculated moveList
     def __animate(self):
         self.currentX = self.moveList[self.frameCount]
-        gameDisplay.blit(imageDic['arrow'], (self.currentX-50, columnTracker.trackerY))
+        gameDisplay.blit(imageDic['arrow'], (self.currentX-50, Tracker.trackerY))
         self.frameCount += 1
-        if self.frameCount == columnTracker.totalFrame:
+        if self.frameCount == Tracker.totalFrame:
             self.animating = False
 
     # Return the list of move steps of the animation
     def __getMoveList(self):
-        f = columnTracker.totalFrame
+        f = Tracker.totalFrame
         # Ease in/ease out intervals in range [0, 1] 
         intervals = [self.__parametricBlend((i+1)/f) for i in range(f)]
         self.moveList = [int((self.targetX-self.currentX)*i+self.currentX) for i in intervals]
@@ -344,6 +386,36 @@ class columnTracker:
     def __parametricBlend(self, t):
         sqt = t**2
         return sqt / (2.0 * (sqt - t) + 1.0)
+
+
+class Pieces:
+
+    # Class constants: x and y values for pieces
+    xList = [boardFrontPos[0]+74+i*92 for i in range(7)]
+    yList = [boardFrontPos[1]+33+i*92 for i in range(6)]
+    # Frames used for one animation
+    totalFrame = int(fps/2)
+
+    def __init__(self):
+        self.animating = False # Assume one piece animation at a time
+        self.frameCount = 0
+        self.pieceList = [] # A piece is added to pieceList after its animation
+
+    # Animate dropping a piece, lastMove is encoded as (x, y, color(1 for red, 0 for yellow))
+    def dropPiece(self, lastMove):
+        
+
+        self.pieceList.append(lastMove)
+
+    def update(self):
+        # Render static pieces
+        for (x, y, red) in self.pieceList:
+            if red:
+                gameDisplay.blit(imageDic['red_piece'], (Pieces.xList[x], Pieces.yList[y]))
+            else:
+                gameDisplay.blit(imageDic['yellow_piece'], (Pieces.xList[x], Pieces.yList[y]))
+        # Render dropping piece
+        return
 
 
 # Initialize pygame
