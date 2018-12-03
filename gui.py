@@ -334,10 +334,4 @@ if __name__ == "__main__":
 #     # Start GUI process
 #     GUIProcess = Process(target=showStartScreen)
 #     GUIProcess.start()
-<<<<<<< HEAD
-    gameThread = Thread(target=playGame)
-    gameThread.daemon = True # Terminate when main thread terminates
-    gameThread.start()
-=======
->>>>>>> 201f2d9ca66df73f7f92ce67b8abb3824192e2f3
     showStartScreen()
