@@ -454,7 +454,7 @@ def startBackend(playerA, playerB):
         print('process id:', os.getpid())
         # Set globals so gameScreen have access to game object
         global gameBackend
-        gameBackend = game(players=(playerA, playerB), cout=True, moveEvent=moveEvent)
+        gameBackend = game(players=(playerA, playerB), cout=True)
     gameBackend.startGame()
 
 if __name__ == "__main__":

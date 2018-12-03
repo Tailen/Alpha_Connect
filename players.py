@@ -39,11 +39,10 @@ class MCTSPlayer:
     def getMove(self, game):
         self.gameBoard = game
         tree = searchTree(self.gameBoard)
-        for _ in range(5000):
+        for _ in range(3000):
             tree.iterate()
             # Reset currentNode to rootNode
             tree.currentNode = tree.rootNode
-        print('getting move')
         return tree.getMove()
 
 

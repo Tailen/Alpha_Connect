@@ -1,4 +1,5 @@
 from random import randint
+
 from players import humanPlayer
 
 
@@ -25,7 +26,6 @@ class game(object):
         if self.cout: print(self)
         while not self.gameEnded:
             move = self.players[self.redTurn].getMove(self)
-            print('Got move')
             if self.isValidMove(str(move)):
                 self.placeMove(move)
             if self.cout: print('\n' + str(self))
