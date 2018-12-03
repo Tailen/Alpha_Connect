@@ -1,29 +1,12 @@
 import numpy as np
 from copy import deepcopy
-from operator import itemgetter
+from simulateGame import simulatedGame
+# from operator import itemgetter
 from random import randint
 # Use epsilon to prevent division by zero
 epsilon = np.finfo(float).eps
 # A list that store depths of every treeNode created
 depthList = []
-
-
-# Class of Monte Carlo Tree Search
-class MCTSPlayer(object):
-
-    def __init__(self, board):
-        # rootNode = treeNode(c=np.sqrt(2))
-        self.gameBoard = board
-        tree = searchTree(self.gameBoard)
-        for _ in range(5000):
-            tree.iterate()
-            # Reset currentNode to rootNode
-            tree.currentNode = tree.rootNode
-        self.move = tree.getMove()
-        print(self.move)
-
-    def returnMove(self):
-        return self.move
 
 
 # Class for a node on the Monte Carlo Tree Search
@@ -35,14 +18,17 @@ class treeNode(object):
         self.n = 0 # Number of simulations after this move
         self.w = 0 # Number of wins after this move
         self.c = c # Exploration parameter, defaulted sqrt of 2
-        self.board = deepcopy(board)
         self.player = player
         self.parent = parent
         self.children = {}
         # Record the node depths
         if parent == None:
+            # Create simulateGame game instance if is rootNode
+            self.board = simulatedGame(
+                board.slots, board.gameEnded, board.winner, board.redTurn)
             self.depth = 1
         else:
+            self.board = deepcopy(board)
             self.depth = parent.depth + 1
         global depthList
         depthList.append(self.depth)
@@ -100,7 +86,7 @@ class searchTree(object):
     
     def __init__(self, board):
         # Start player is always the other player
-        self.rootNode = treeNode(board, player=board.redTurn, c=np.sqrt(2), parent=None)
+        self.rootNode = treeNode(board, player=not board.redTurn, c=np.sqrt(2), parent=None)
         self.currentNode = self.rootNode
 
     def iterate(self):
@@ -120,4 +106,3 @@ class searchTree(object):
         print(len(depthList), 'instances of treeNode created')
         print('Maximum depth is ', max(depthList))
         return min(childNodes.items(), key=lambda i: 1.0*i[1].w/(i[1].n+epsilon))[0]
-        
