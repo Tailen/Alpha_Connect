@@ -1,8 +1,11 @@
 '''Classes of players: Human, HumanGUI, MCTS, and AlphaConnect. Input game and output the move(0-6)'''
 
-from mcts import searchTree
+import mcts
+import mcts_AlphaGo
+from model import policyValueNet
 
-class humanPlayer:
+
+class humanPlayer(object):
 
     def __init__(self):
         self.name = 'Console'
@@ -14,7 +17,7 @@ class humanPlayer:
         return int(moveStr)
 
 
-class humanGUIPlayer:
+class humanGUIPlayer(object):
 
     def __init__(self, moveEvent):
         self.name = 'Human'
@@ -31,25 +34,26 @@ class humanGUIPlayer:
         self.move = move
 
 
-class MCTSPlayer:
+class MCTSPlayer(object):
 
     def __init__(self):
         self.name = 'AI'
 
     def getMove(self, game):
-        self.gameBoard = game
-        tree = searchTree(self.gameBoard)
-        for _ in range(3000):
+        tree = mcts.searchTree(game)
+        for _ in range(5000):
             tree.iterate()
-            # Reset currentNode to rootNode
-            tree.currentNode = tree.rootNode
         return tree.getMove()
 
 
-class AlphaConnectPlayer:
+class AlphaConnectPlayer(object):
 
-    def __init__(self):
+    def __init__(self, weights_path):
         self.name = 'AI'
+        self.network = policyValueNet(weights_path)
 
     def getMove(self, game):
-        return
+        tree = mcts_AlphaGo.searchTree(game, self.network)
+        for _ in range(300):
+            tree.iterate()
+        return tree.getMove()

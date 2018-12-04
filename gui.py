@@ -4,11 +4,11 @@ from game import game # The basic machanics of the game
 import os # To traverse directories and load images
 from random import randint
 from threading import Thread, Event, Lock
-from players import humanGUIPlayer, MCTSPlayer
+from players import humanGUIPlayer, MCTSPlayer, humanPlayer
 
 
 # Set constants and defaults
-fps = 60
+fps = 30
 defaultWidth, defaultHeight = 1280, 720
 imageFolderPath = './pic/'
 # Preset color values
@@ -105,6 +105,7 @@ def showGameScreen(isFullscreen=False):
     gamePieces = Pieces() # Animates the piece drop down
     # Randomize the order of how two players are passed to game
     player1 = MCTSPlayer()
+    # player1 = humanGUIPlayer(moveEvent)
     player2 = humanGUIPlayer(moveEvent)
     player1Turn = randint(0, 1)
     if player1Turn:
@@ -303,7 +304,6 @@ class TurnLabel:
                     show_text('Red Won!', 21, self.textPos, 130, 24)
                 else:
                     show_text('Yellow Won!', 21, self.textPos, 130, 24)
-                # print(self.player1Turn, self.player1Name, self.player2Name)
             else:
                 if self.winner == -1:
                     show_text('Draw! GGWP', 21, self.textPos, 130, 24)
