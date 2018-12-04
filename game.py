@@ -1,8 +1,3 @@
-from random import randint
-
-from players import humanPlayer
-
-
 # For simpler reading x is red, o is yellow
 class game(object):
 
@@ -12,12 +7,12 @@ class game(object):
         self.slots = [['-' for i in range(6)] for i in range(7)]
         self.gameEnded = False
         self.winner = None # False(0) for red(x) won, True(1) for yellow(o) won, -1 for draw
-        # Decide who plays first, 0 then first player(red) plays first
-        self.redTurn = bool(randint(0, 1))
+        # The first player(red) plays first
+        self.redTurn = 1
         self.cout = cout
         self.players = players
-        if self.redTurn and cout: print('Yellow(o) plays first\n')
-        elif cout: print('Red(x) plays first\n')
+        if self.redTurn and cout: print('Red(x) plays first\n')
+        elif cout: print('Yellow(o) plays first\n')
         # True if the board is modified after GUI update
         self.modified = False
         self.lastMove = (None, None, None)
@@ -25,7 +20,7 @@ class game(object):
     def startGame(self):
         if self.cout: print(self)
         while not self.gameEnded:
-            move = self.players[self.redTurn].getMove(self)
+            move = self.players[not self.redTurn].getMove(self)
             if self.isValidMove(str(move)):
                 self.placeMove(move)
             if self.cout: print('\n' + str(self))
@@ -135,6 +130,8 @@ class game(object):
 
 
 if __name__ == '__main__':
+    # Play game in console
+    from players import humanPlayer
     player1 = humanPlayer()
     player2 = humanPlayer()
     myGame = game(players=(player1, player2))

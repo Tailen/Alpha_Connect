@@ -1,7 +1,7 @@
 import numpy as np
 from copy import deepcopy
-from simulateGame import simulatedGame
 from random import randint
+from simulateGame import simulatedGame
 # Use epsilon to prevent division by zero
 epsilon = np.finfo(float).eps
 # A list that store depths of every treeNode created
@@ -10,6 +10,8 @@ depthList = []
 
 # Class for a node on the Monte Carlo Tree Search
 class treeNode(object):
+
+    c_puct = 5 # UCT score parameter
     
     # Player is 0 for red or 1 for yellow (True or False)
     def __init__(self, board, player, c=np.sqrt(2), parent=None):
@@ -83,7 +85,7 @@ class treeNode(object):
 # The same search tree is passed around each move, to save computation
 class searchTree(object):
     
-    def __init__(self, board):
+    def __init__(self, board, network):
         # Start player is always the other player
         self.rootNode = treeNode(board, player=not board.redTurn, c=np.sqrt(2), parent=None)
         self.currentNode = self.rootNode

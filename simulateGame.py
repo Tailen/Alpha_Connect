@@ -1,16 +1,10 @@
-from random import randint
-
-
-# For simpler reading x is red, o is yellow
+# A simplified version of game class for simulations in tree search
 class simulatedGame(object):
 
-    # Players is a list of two player objects
     def __init__(self, slots, gameEnded, winner, redTurn):
-        # (0,0) is top left corner
-        self.slots = [['-' for i in range(6)] for i in range(7)]
+        self.slots = slots
         self.gameEnded = gameEnded
         self.winner = winner # False(0) for red(x) won, True(1) for yellow(o) won, -1 for draw
-        # Decide who plays first, 0 then first player(red) plays first
         self.redTurn = redTurn
 
     # Return True if successfully played the move, input is assumed to be valid
@@ -71,18 +65,14 @@ class simulatedGame(object):
                 return False
         return True
 
-    # withY=True returns moveList with (x, y) cords, withY=False returns a list of x
-    def getValidMoves(self, withY=False):
-        # moveList is a list of tuple's of (x, y)
-        moveList = []
+    # Return a list of valid moves (0-6)
+    def getValidMoves(self):
+        cord = []
         for x in range(7):
             lowest_y = -1
             for y in range(6):
                 if self.slots[x][y] == '-':
                     lowest_y += 1
             if lowest_y != -1:
-                moveList.append((x, y))
-        if withY:
-            return moveList
-        else:
-            return [cord[0] for cord in moveList]
+                cord.append(x)
+        return cord
