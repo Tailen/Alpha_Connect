@@ -1,7 +1,9 @@
 import numpy as np
 from copy import deepcopy
 from simulateGame import simulatedGame
+from utils import convertInput
 from random import randint
+import sys
 # Use epsilon to prevent division by zero
 epsilon = np.finfo(float).eps
 # A list that store depths of every treeNode created
@@ -23,11 +25,12 @@ class treeNode(object):
         # Record the node depths
         if parent == None:
             # Create simulateGame game instance if is rootNode
+            slots = convertInput(board.slots) # Convert slots to -1, 0, 1 representation
             self.board = simulatedGame(
-                board.slots, board.gameEnded, board.winner, board.redTurn)
+                slots, board.gameEnded, board.winner, board.redTurn)
             self.depth = 1
         else:
-            self.board = deepcopy(board)
+            self.board = board
             self.depth = parent.depth + 1
         global depthList
         depthList.append(self.depth)
@@ -102,9 +105,19 @@ class searchTree(object):
         self.currentNode = self.rootNode
     
     def getMove(self):
-        global epsilon, depthList
+        global depthList
         childNodes = self.rootNode.children
         print(len(depthList), 'instances of treeNode created')
         print('Maximum depth is ', max(depthList))
-        # Select the child of root node that has the highest winrate
-        return min(childNodes.items(), key=lambda i: 1.0*i[1].w/(i[1].n+epsilon))[0]
+        # Remove any node that leads to loss in next opponent's move
+        for child in childNodes.values():
+            moves = child.board.getValidMoves()
+            for move in moves:
+                board = deepcopy(child.board)
+                board.placeMove(move)
+                if board.winner == child.player:
+                    child.n = sys.maxsize
+        # Print n value for child node, the lower the better
+        print([child.n for child in childNodes.values()])
+        # Select the child of root node that has the least visits (the best for current player)
+        return min(childNodes.items(), key=lambda i: i[1].n)[0]

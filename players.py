@@ -41,19 +41,22 @@ class MCTSPlayer(object):
 
     def getMove(self, game):
         tree = mcts.searchTree(game)
-        for _ in range(5000):
+        for _ in range(6000):
             tree.iterate()
         return tree.getMove()
 
 
 class AlphaConnectPlayer(object):
 
-    def __init__(self, weights_path):
+    def __init__(self, weights_path=None):
         self.name = 'AI'
-        self.network = policyValueNet(weights_path)
+        if weights_path != None:
+            self.network = policyValueNet(weights_path)
+        else:
+            self.network = policyValueNet()
 
     def getMove(self, game):
         tree = mcts_AlphaGo.searchTree(game, self.network)
-        for _ in range(300):
+        for _ in range(512):
             tree.iterate()
         return tree.getMove()

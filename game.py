@@ -61,6 +61,7 @@ class game(object):
             if self.cout: print('Well Played! Yellow(o) player won!')
         elif self.checkDraw():
             self.gameEnded = True
+            self.winner = -1
             if self.cout: print('Well played! Draw!')
             
     def checkPlayerWon(self, color):

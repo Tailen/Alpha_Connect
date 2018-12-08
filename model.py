@@ -10,6 +10,10 @@ import pickle # Save and load model weights
 from simulateGame import simulatedGame
 
 
+global graph
+graph = tf.get_default_graph()
+
+
 # Class that create the policy-value-network, save and load weights, fit and predict
 class policyValueNet(object):
 
@@ -38,24 +42,24 @@ class policyValueNet(object):
         convNet = BatchNormalization(axis=-1, name='bn1')(convNet)
         # conv2
         convNet = Conv2D(filters=32, kernel_size=(3, 3), data_format='channels_last', padding='same',
-            activation='relu', kernel_regularizer=l2(self.l2_factor), name='conv2')(modelInput)
+            activation='relu', kernel_regularizer=l2(self.l2_factor), name='conv2')(convNet)
         convNet = BatchNormalization(axis=-1, name='bn2')(convNet)
         # conv3
         convNet = Conv2D(filters=64, kernel_size=(3, 3), data_format='channels_last', padding='same',
-            activation='relu', kernel_regularizer=l2(self.l2_factor), name='conv3')(modelInput)
+            activation='relu', kernel_regularizer=l2(self.l2_factor), name='conv3')(convNet)
         convNet = BatchNormalization(axis=-1, name='bn3')(convNet)
         # conv4
         convNet = Conv2D(filters=64, kernel_size=(3, 3), data_format='channels_last', padding='same',
-            activation='relu', kernel_regularizer=l2(self.l2_factor), name='conv4')(modelInput)
+            activation='relu', kernel_regularizer=l2(self.l2_factor), name='conv4')(convNet)
         convNet = BatchNormalization(axis=-1, name='bn4')(convNet)
         # conv5
         convNet = Conv2D(filters=64, kernel_size=(3, 3), data_format='channels_last', padding='same',
-            activation='relu', kernel_regularizer=l2(self.l2_factor), name='conv5')(modelInput)
+            activation='relu', kernel_regularizer=l2(self.l2_factor), name='conv5')(convNet)
         convNet = BatchNormalization(axis=-1, name='bn5')(convNet)
 
         # Policy network layers
         # 1x1 Feature Compression Conv Layer
-        policyNet = Conv2D(filters=2, kernel_size=(1, 1), data_format="channels_last", 
+        policyNet = Conv2D(filters=1, kernel_size=(1, 1), data_format="channels_last", 
             activation="relu", kernel_regularizer=l2(self.l2_factor), name='policy_conv')(convNet)
         policyNet = BatchNormalization(axis=-1, name='policy_bn')(policyNet)
         policyNet = Flatten(name='policy_flatten')(policyNet)
@@ -65,12 +69,12 @@ class policyValueNet(object):
 
         # Value network layers
         # 1x1 Feature Compression Conv Layer
-        valueNet = Conv2D(filters=1, kernel_size=(1, 1), data_format="channels_last", 
+        valueNet = Conv2D(filters=2, kernel_size=(1, 1), data_format="channels_last", 
             activation="relu", kernel_regularizer=l2(self.l2_factor), name='value_conv')(convNet)
         valueNet = BatchNormalization(axis=-1, name='value_bn')(valueNet)
         valueNet = Flatten(name='value_flatten')(valueNet)
         # Dense Layer before output
-        valueNet = Dense(64, kernel_regularizer=l2(self.l2_factor), name='value_dense')(valueNet)
+        valueNet = Dense(32, kernel_regularizer=l2(self.l2_factor), name='value_dense')(valueNet)
         # Value network out layer, outputs game outcome prediction from -1 to 1
         valueNetOut = Dense(1, activation="tanh", 
             kernel_regularizer=l2(self.l2_factor), name='valueNetOut')(valueNet)
@@ -89,14 +93,45 @@ class policyValueNet(object):
     # Convert board to np array, then predict the input
     def predict(self, board):
         x = self.convertInput(board)
-        return self.model.predict(x)
+        with graph.as_default():
+            return self.model.predict(x)
 
     # Save weights to filepath
     def saveWeights(self, filepath):
         weights = self.model.get_weights()  
         pickle.dump(weights, open(filepath, 'wb'), protocol=2)
 
-    # Convert input from a 7x6 2D List to the network input of (7, 6, 1) numpy array
+    # Load weights from filepath
+    def loadWeights(self, filepath):
+        weights = pickle.load(open(filepath, 'rb'))
+        self.model.set_weights(weights)
+
+    # Convert input from a 7x6 2D List to the network input of (?, 7, 6, 1) numpy array
+    # Red pieces are 1, yellow pieces are -1, and empty positions are 0
     def convertInput(self, board):
         board = np.array(board)
-        return board.reshape(self.BOARD_WIDTH, self.BOARD_HEIGHT, 1)
+        return board.reshape(-1, self.BOARD_WIDTH, self.BOARD_HEIGHT, 1)
+
+    # Save the graph of the current neural network to model.png
+    def getNNGraph(self):
+        from keras.utils import plot_model
+        plot_model(self.model, to_file='./model.png', show_shapes = True)
+
+
+model = policyValueNet('./weights.h5')
+
+# model.saveWeights('./weights.h5')
+
+# slots = [['x','o','o','o','x','o'],
+#         ['o','o','x','x','x','o'],
+#         ['o','x','o','o','x','x'],
+#         ['o','x','x','x','o','x'],
+#         ['x','x','o','o','x','o'],
+#         ['o','o','x','o','x','x'],
+#         ['-','o','x','o','x','o']]
+# output = model.predict(slots)
+# a = output[0][0]
+# b = output[1][0][0]
+# print(output)
+# print(a)
+# print(b)

@@ -4,7 +4,7 @@ from game import game # The basic machanics of the game
 import os # To traverse directories and load images
 from random import randint
 from threading import Thread, Event, Lock
-from players import humanGUIPlayer, MCTSPlayer, humanPlayer
+from players import humanGUIPlayer, MCTSPlayer, humanPlayer, AlphaConnectPlayer
 
 
 # Set constants and defaults
@@ -97,16 +97,18 @@ def showSelectScreen(isFullscreen=False):
     quitWindow()
 
 # Show game screen
-def showGameScreen(isFullscreen=False):
+def showGameScreen(isFullscreen=False, player1=MCTSPlayer, player2=humanGUIPlayer(moveEvent)):
     # Initialize button instances
     minimizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_minimize', command=setWindowed)
     maximizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_maximize', command=setFullScreen)
     tracker = Tracker() # Responsible for passing the gui input to player class
     gamePieces = Pieces() # Animates the piece drop down
     # Randomize the order of how two players are passed to game
-    player1 = MCTSPlayer()
+    player1 = AlphaConnectPlayer('./weights.h5')
+    # player1 = MCTSPlayer()
     # player1 = humanGUIPlayer(moveEvent)
-    player2 = humanGUIPlayer(moveEvent)
+    # player2 = humanGUIPlayer(moveEvent)
+    player2 = MCTSPlayer()
     player1Turn = randint(0, 1)
     if player1Turn:
         gameThread = Thread(target=startBackend, args=[player1, player2], daemon=True)
@@ -336,6 +338,7 @@ class Tracker:
     def update(self, player1Turn, players):
         # Get information about the mouse
         cursorX = pygame.mouse.get_pos()[0]
+        cursorX  = int(cursorX / currentScreenScale)
         mousePress = pygame.mouse.get_pressed()[0]
         # Animate and move the tracker
         for i in range(7):
