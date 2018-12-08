@@ -1,11 +1,11 @@
-import numpy as np
+import math
 from copy import deepcopy
 from simulateGame import simulatedGame
 from utils import convertInput
 from random import randint
 import sys
 # Use epsilon to prevent division by zero
-epsilon = np.finfo(float).eps
+epsilon = sys.float_info.epsilon
 # A list that store depths of every treeNode created
 depthList = []
 
@@ -14,7 +14,7 @@ depthList = []
 class treeNode(object):
     
     # Player is 0 for red or 1 for yellow (True or False)
-    def __init__(self, board, player, c=np.sqrt(2), parent=None):
+    def __init__(self, board, player, c=math.sqrt(2), parent=None):
         self.isLeaf = True # Indicates if the tree node is a leaf node
         self.n = 0 # Number of simulations after this move
         self.w = 0 # Number of wins after this move
@@ -80,7 +80,7 @@ class treeNode(object):
         global epsilon
         # Get number of simulations of parent node
         N = self.parent.n
-        return (1.0*self.w/(self.n+epsilon)) + self.c*np.sqrt(np.log(N)/(self.n+epsilon))
+        return (1.0*self.w/(self.n+epsilon)) + self.c*math.sqrt(math.log(N)/(self.n+epsilon))
 
 
 # The same search tree is passed around each move, to save computation
@@ -88,7 +88,7 @@ class searchTree(object):
     
     def __init__(self, board):
         # Start player is always the other player
-        self.rootNode = treeNode(board, player=not board.redTurn, c=np.sqrt(2), parent=None)
+        self.rootNode = treeNode(board, player=not board.redTurn, c=math.sqrt(2), parent=None)
         self.currentNode = self.rootNode
 
     def iterate(self):

@@ -88,7 +88,6 @@ def showSelectScreen(isFullscreen=False, music=True):
     vsHumanBtn = button(vsHumanBtnPos, 316, 250, 'btn_human', command=lambda: startHumanGame())
     vsAIBtn = button(vsAIBtnPos, 316, 250, 'btn_ai', command=lambda: startAIGame())
     def startHumanGame():
-        print('Starting human game')
         player1 = humanGUIPlayer(moveEvent)
         player2 = humanGUIPlayer(moveEvent)
         showGameScreen(isFullscreen, music, player1, player2)
