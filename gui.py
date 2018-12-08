@@ -4,7 +4,7 @@ from game import game # The basic machanics of the game
 import os # To traverse directories and load images
 from random import randint
 from threading import Thread, Event, Lock
-from players import humanGUIPlayer, MCTSPlayer, humanPlayer, AlphaConnectPlayer
+from players import humanGUIPlayer, MCTSPlayer, AlphaConnectPlayer
 
 
 # Set constants and defaults
@@ -22,21 +22,27 @@ playBtnPos = (810, 330)
 boardFrontPos = (180, 60)
 boardBackPos = (212, 64)
 turnLabelPos = (990, 420)
+homeBtnPos = (1170, 15)
+restartBtnPos = (1065, 15)
+musicBtnPos = (960, 15)
+vsHumanBtnPos = (270, 270)
+vsAIBtnPos = (690, 270)
 # Initialize threading lock objects
 moveEvent = Event() # Block gameTread when waiting GUIPlayer input
 boardLock = Lock() # Block gameTread when updating board postitions
 
 
 # Show start sceen
-def showStartScreen(isFullscreen=False):
+def showStartScreen(isFullscreen=False, music=True):
     # Initialize button instances
     minimizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_minimize', command=setWindowed)
     maximizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_maximize', command=setFullScreen)
+    musicBtn = button(homeBtnPos, 96, 101, 'btn_sound', command=setMute)
+    muteBtn = button(homeBtnPos, 96, 101, 'btn_mute', command=setSound)
     playBtn = button(playBtnPos, 233, 239, 'btn_play',
-        animate=True, command=lambda: showGameScreen(isFullscreen))
+        animate=True, command=lambda: showSelectScreen(isFullscreen, music))
     # Start screen main loop
     running = True
-    isFullscreen = False
     while running:
         # Check events
         for event in pygame.event.get():
@@ -51,6 +57,12 @@ def showStartScreen(isFullscreen=False):
         # Update display
         gameDisplay.blit(imageDic['bg_menu'], (0, 0))
         playBtn.update()
+        if music:
+            if musicBtn.update():
+                music = False
+        else:
+            if muteBtn.update():
+                music = True
         if isFullscreen:
             if minimizeBtn.update(): # button.update returns True if button is clicked
                 isFullscreen = False
@@ -67,9 +79,23 @@ def showStartScreen(isFullscreen=False):
     quitWindow()
 
 # Show opponent selection screen
-def showSelectScreen(isFullscreen=False):
+def showSelectScreen(isFullscreen=False, music=True):
     # Initialize button instances
-
+    homeBtn = button(homeBtnPos, 96, 101, 'btn_home', 
+        command=lambda: showStartScreen(isFullscreen, music))
+    musicBtn = button(restartBtnPos, 96, 101, 'btn_sound', command=setMute)
+    muteBtn = button(restartBtnPos, 96, 101, 'btn_mute', command=setSound)
+    vsHumanBtn = button(vsHumanBtnPos, 316, 250, 'btn_human', command=lambda: startHumanGame())
+    vsAIBtn = button(vsAIBtnPos, 316, 250, 'btn_ai', command=lambda: startAIGame())
+    def startHumanGame():
+        print('Starting human game')
+        player1 = humanGUIPlayer(moveEvent)
+        player2 = humanGUIPlayer(moveEvent)
+        showGameScreen(isFullscreen, music, player1, player2)
+    def startAIGame():
+        player1 = MCTSPlayer()
+        player2 = humanGUIPlayer(moveEvent)
+        showGameScreen(isFullscreen, music, player1, player2)
     # Select screen main loop
     running = True
     while running:
@@ -85,6 +111,15 @@ def showSelectScreen(isFullscreen=False):
                     running = False
         # Update display
         gameDisplay.blit(imageDic['bg_select'], (0, 0))
+        homeBtn.update()
+        vsHumanBtn.update()
+        vsAIBtn.update()
+        if music:
+            if musicBtn.update():
+                music = False
+        else:
+            if muteBtn.update():
+                music = True
         if isFullscreen:
             # Scale gameDisplay to fit onto root
             root.blit(pygame.transform.smoothscale(gameDisplay, (maxWidth, maxHeight)), (0, 0))
@@ -97,18 +132,28 @@ def showSelectScreen(isFullscreen=False):
     quitWindow()
 
 # Show game screen
-def showGameScreen(isFullscreen=False, player1=MCTSPlayer, player2=humanGUIPlayer(moveEvent)):
+def showGameScreen(isFullscreen=False, music=True, player1=MCTSPlayer, player2=humanGUIPlayer(moveEvent)):
     # Initialize button instances
     minimizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_minimize', command=setWindowed)
     maximizeBtn = button(fullscreenBtnPos, 96, 101, 'btn_maximize', command=setFullScreen)
+    homeBtn = button(homeBtnPos, 96, 101, 'btn_home',
+        command=lambda: startScreenNext(gameThread))
+    restartBtn = button(restartBtnPos, 96, 101, 'btn_restart', 
+        command=lambda: gameScreenNext(gameThread))
+    # End and wait for gameThread before show other screens
+    def startScreenNext(gameThread):
+        gameBackend.gameEnded = True
+        gameThread.join()
+        showStartScreen(isFullscreen, music)
+    def gameScreenNext(gameThread):
+        gameBackend.gameEnded = True
+        gameThread.join()
+        showGameScreen(isFullscreen, music, player1, player2)
+    musicBtn = button(musicBtnPos, 96, 101, 'btn_sound', command=setMute)
+    muteBtn = button(musicBtnPos, 96, 101, 'btn_mute', command=setSound)
     tracker = Tracker() # Responsible for passing the gui input to player class
     gamePieces = Pieces() # Animates the piece drop down
     # Randomize the order of how two players are passed to game
-    player1 = AlphaConnectPlayer('./weights.h5')
-    # player1 = MCTSPlayer()
-    # player1 = humanGUIPlayer(moveEvent)
-    # player2 = humanGUIPlayer(moveEvent)
-    player2 = MCTSPlayer()
     player1Turn = randint(0, 1)
     if player1Turn:
         gameThread = Thread(target=startBackend, args=[player1, player2], daemon=True)
@@ -150,6 +195,14 @@ def showGameScreen(isFullscreen=False, player1=MCTSPlayer, player2=humanGUIPlaye
         gameDisplay.blit(imageDic['board_front'], boardFrontPos)
         turnLabel.update(player1Turn)
         tracker.update(player1Turn, (player1, player2))
+        homeBtn.update()
+        restartBtn.update()
+        if music:
+            if musicBtn.update():
+                music = False
+        else:
+            if muteBtn.update():
+                music = True
         if isFullscreen:
             if minimizeBtn.update(): # button.update returns True if button is clicked
                 isFullscreen = False
@@ -193,6 +246,12 @@ def quitGame(gameThread):
 def quitWindow():
     pygame.quit()
     quit()
+
+def setSound():
+    pygame.mixer.music.play()
+
+def setMute():
+    pygame.mixer.music.fadeout(1000)
 
 def show_text(text, size, pos, width, height):
     font = pygame.font.Font('FreeSans.ttf', size)
@@ -337,8 +396,7 @@ class Tracker:
         
     def update(self, player1Turn, players):
         # Get information about the mouse
-        cursorX = pygame.mouse.get_pos()[0]
-        cursorX  = int(cursorX / currentScreenScale)
+        cursorX = int(pygame.mouse.get_pos()[0] / currentScreenScale)
         mousePress = pygame.mouse.get_pressed()[0]
         # Animate and move the tracker
         for i in range(7):
@@ -427,12 +485,10 @@ root = pygame.display.set_mode((defaultWidth, defaultHeight))
 gameDisplay = root.copy()
 pygame.display.set_caption('Alpha Connect')
 clock = pygame.time.Clock()
-
-# ---------------------------------------------
-screenInfo = pygame.display.Info()
-# print(screenInfo)
-# ---------------------------------------------
-
+# Load and play background music
+pygame.mixer.init()
+pygame.mixer.music.load('./bg_music.mp3')
+pygame.mixer.music.play()
 # Load images from pic directory
 imageDic = {} # A dictionary of image names to the images
 for filename in os.listdir(imageFolderPath):
@@ -466,3 +522,4 @@ if __name__ == "__main__":
 #     GUIProcess = Process(target=showStartScreen)
 #     GUIProcess.start()
     showStartScreen()
+    
