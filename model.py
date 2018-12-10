@@ -14,8 +14,10 @@ global graph
 graph = tf.get_default_graph()
 
 
-# Class that create the policy-value-network, save and load weights, fit and predict
 class policyValueNet(object):
+    '''
+    This class creates the policy-value-network, save and load weights, fit and predict
+    '''
 
     BOARD_WIDTH = 7
     BOARD_HEIGHT = 6

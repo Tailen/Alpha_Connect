@@ -1,5 +1,7 @@
-# A simplified version of game class for simulations in tree search
 class simulatedGame(object):
+    '''
+    A simplified version of game class for simulations in tree search
+    '''
 
     def __init__(self, slots, gameEnded, winner, redTurn):
         self.slots = slots

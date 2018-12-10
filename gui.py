@@ -3,7 +3,7 @@ import time # For timing between moves to prevent unintended placements
 from game import game # The basic machanics of the game
 import os # To traverse directories and load images
 from random import randint
-from threading import Thread, Event, Lock
+from threading import Thread, Event, Lock # Allow responsive UI
 from players import humanGUIPlayer, MCTSPlayer, AlphaConnectPlayer
 
 
@@ -261,6 +261,11 @@ def show_text(text, size, pos, width, height):
 
 
 class button:
+    '''
+    A button object implemented in pygame. 
+    It can animate scaling effect, and return True if pressed.
+    If command is given, execute that command when pressed.
+    '''
 
     def __init__(self, pos, width, height, imageName, animate=False, command=None):
         self.pos = pos
@@ -323,6 +328,9 @@ class button:
 
 
 class TurnLabel:
+    '''
+    A turn-label object implemented in pygame.
+    '''
 
     def __init__(self, pos, player1Turn, player1Name, player2Name):
         self.pos = pos
@@ -374,6 +382,11 @@ class TurnLabel:
 
 
 class Tracker:
+    '''
+    A Tracker object implemented in pygame.
+    Follows the mouse in the seven columns.
+    Animated with parametric blend function to achieve ease-in/ease-out.
+    '''
 
     # Class constants
     trackerY = 6
@@ -449,6 +462,9 @@ class Tracker:
 
 
 class Pieces:
+    '''
+    Game piece object implemented in pygame. Animates the piece dropping effect.
+    '''
 
     # Class constants: x and y values for pieces
     xList = [boardFrontPos[0]+74+i*92 for i in range(7)]
@@ -463,7 +479,8 @@ class Pieces:
 
     # Animate dropping a piece, lastMove is encoded as (x, y, color(1 for red, 0 for yellow))
     def dropPiece(self, lastMove):
-        
+
+
 
         self.pieceList.append(lastMove)
 
@@ -521,4 +538,3 @@ if __name__ == "__main__":
 #     GUIProcess = Process(target=showStartScreen)
 #     GUIProcess.start()
     showStartScreen()
-    

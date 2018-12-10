@@ -10,8 +10,10 @@ epsilon = sys.float_info.epsilon
 depthList = []
 
 
-# Class for a node on the Monte Carlo Tree Search
 class treeNode(object):
+    '''
+    Class for a node on the Monte Carlo Tree Search
+    '''
     
     # Player is 0 for red or 1 for yellow (True or False)
     def __init__(self, board, player, c=math.sqrt(2), parent=None):
@@ -111,12 +113,16 @@ class searchTree(object):
         print('Maximum depth is ', max(depthList))
         # Remove any node that leads to loss in next opponent's move
         for child in childNodes.values():
-            moves = child.board.getValidMoves()
-            for move in moves:
-                board = deepcopy(child.board)
-                board.placeMove(move)
-                if board.winner == child.player:
-                    child.n = sys.maxsize
+            if not child.board.gameEnded:
+                moves = child.board.getValidMoves()
+                for move in moves:
+                    board = deepcopy(child.board)
+                    board.placeMove(move)
+                    if board.winner == child.player:
+                        child.n = sys.maxsize
+            # If move leads to win, play it
+            if child.board.winner == self.rootNode.player:
+                child.n = 0
         # Print n value for child node, the lower the better
         print([child.n for child in childNodes.values()])
         # Select the child of root node that has the least visits (the best for current player)

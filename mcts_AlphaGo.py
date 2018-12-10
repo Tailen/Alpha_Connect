@@ -9,8 +9,10 @@ epsilon = np.finfo(float).eps
 depthList = []
 
 
-# Class for a node on the Monte Carlo Tree Search for AlphaGo Zero
 class treeNode(object):
+    '''
+    Class for a node on the Monte Carlo Tree Search for AlphaGo Zero
+    '''
 
     c_puct = 5 # PUCT score parameter
     

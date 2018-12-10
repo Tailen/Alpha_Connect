@@ -1,5 +1,8 @@
 # For simpler reading x is red, o is yellow
 class game(object):
+    '''
+    The console version of the game, implements all Connect 4 game mechanics
+    '''
 
     # Print msgs and errors if cout is True, players is a list of two player objects
     def __init__(self, players, cout=True):
